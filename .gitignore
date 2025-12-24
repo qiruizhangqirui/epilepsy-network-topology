@@ -1,52 +1,223 @@
-# Prerequisites
-*.d
+# ========================
+# Data & results
+# ========================
+outputs/
+data/
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+# ====================
+# Operating System Files
+# ====================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# Precompiled Headers
-*.gch
-*.pch
+# Linux
+*~
+.directory
+.Trash-*
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
 
-# Shared objects (inc. Windows DLLs)
-*.dll
+
+# ====================
+# IDE and Editor Files
+# ====================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+
+# ====================
+# MATLAB Specific
+# ====================
+# MATLAB autosave files
+*.asv
+*.m~
+
+# MATLAB compiled files
+*.mex*
+*.p
+
+# MATLAB build directories
+codegen/
+slprj/
+
+# MATLAB temporary files
+*.autosave
+
+# ====================
+# Python Specific
+# ====================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 *.so
-*.so.*
-*.dylib
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# ====================
+# R Specific
+# ====================
+# R history and data
+.Rhistory
+.RData
+.Rapp.history
+
+# R session data
+.RDataTmp
+
+# R user-specific files
+.Ruserdata
+.Rproj.user/
+
+# R output files
+*.Rout
+*.rds
+*.rda
+
+# pkgdown site
+docs/
+
+# knitr and R markdown
+*.utf8.md
+*.knit.md
+
+# ====================
+# Data Files
+# ====================
+# Large data files (uncomment if needed)
+# *.mat
+# *.nii
+# *.tiff
+# *.tif
+
+# Excel and CSV (uncomment if you want to ignore them)
+# *.xlsx
+# *.xls
+# *.csv
+
+# Word documents (uncomment if you want to ignore them)
+ *.docx
+ *.doc
+
+# ====================
+# Output and Temporary Files
+# ====================
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+*- Copy.*
+*_old.*
+
+# Compressed files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tgz
+
+# ====================
+# Project Specific
+# ====================
+# If you want to ignore specific output directories
+# outputs/
+# data/
+
+# Ignore all files in outputs except for certain types (example)
+# outputs/*
+# !outputs/*.mat
+# !outputs/README.md
