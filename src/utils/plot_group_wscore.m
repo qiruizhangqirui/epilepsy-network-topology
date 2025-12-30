@@ -1,26 +1,26 @@
-function [w_vec, p_vec, labels] = plot_group_wsocre(w_scores, GroupTable, label_str, output_name)
-% Single-metric (w_scores is N×1) boxplot across groups
+function [w_vec, p_vec, labels, std_vec] = plot_group_wscore(w_scores, GroupTable, label_str, output_name)
+% =========================================================================
+% Function: plot_group_wscore
+% -------------------------------------------------------------------------
+% Description:
+%   Generates a boxplot of a single W-score metric across multiple groups.
+%   Performs one-sample t-tests against zero and BH-FDR correction.
+%   Annotates significance with stars (** q<0.01, * q<0.05).
 %
-% Inputs
-%   w_scores   : N×1 column vector of W-scores
-%   GroupTable : table; each column is a group indicator (0/1, logical, or numeric).
-%                Values > 0 are treated as belonging to that group.
-%   label_str  : (optional) string for plot title annotation
-%   output_name: (optional) output file name (e.g., 'xxx.tif') for exporting the figure
+% Inputs:
+%   w_scores    - N x 1 column vector of W-scores
+%   GroupTable  - Table where each column is a group indicator
+%   label_str   - (Optional) String for plot title annotation
+%   output_name - (Optional) Output filename for saving the figure
 %
-% Behavior
-%   - Automatically drops columns that have no members (all 0 / NaN / non-finite).
-%   - Outliers: Tukey rule (1.5×IQR) shown as hollow circles.
-%   - Significance: one-sample t-test vs 0, then BH-FDR across groups (requires mafdr).
-%     Star annotation priority (FDR-based):
-%         q < 0.01  -> '**'
-%         q < 0.05  -> '*'
-%     (No raw-p star shown in the current implementation.)
+%   w_vec       - Per-group median (vector)
+%   p_vec       - Per-group raw p-value (vector)
+%   labels      - Group names (cell array)
+%   std_vec     - Per-group standard deviation (vector)
 %
-% Outputs
-%   w_vec  : per-group median (column vector, order matches x-axis)
-%   p_vec  : per-group raw p-value from one-sample t-test (column vector)
-%   labels : group names (cellstr, order matches x-axis)
+% Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+% Date: 12/30/2025
+% =========================================================================
 
 % ===== Configuration =====
 box_width       = 0.4;
@@ -63,6 +63,7 @@ colors = lines(max(Ngroup, 5));
 
 % ===== Stats containers =====
 w_med       = nan(1, Ngroup);
+w_std       = nan(1, Ngroup);
 p_vals      = nan(1, Ngroup);
 box_handles = gobjects(Ngroup, 1);
 
@@ -86,7 +87,9 @@ for g = 1:Ngroup
     % One-sample t-test vs 0
     [~, p] = ttest(xg, 0);
     p_vals(g) = p;
+    p_vals(g) = p;
     w_med(g)  = median(xg);
+    w_std(g)  = std(xg);
 
     % Outliers (hollow circles): Tukey 1.5×IQR
     q1  = prctile(xg, 25);
@@ -144,12 +147,13 @@ end
 xlim([0.5, Ngroup + 0.5]);
 xticks(1:Ngroup);
 xticklabels(varNames);
-ylabel('W-score');
+ylabel('W-score', 'FontSize', 18); % Increased font size for Y-label
+set(gca, 'FontSize', 18);          % Increased font size for axis ticks (X and Y)
 
 if exist('label_str', 'var') && ~isempty(label_str)
-    title(sprintf('W-score by group: %s', label_str), 'Interpreter', 'none');
+    title(sprintf('W-score by group: %s', label_str), 'Interpreter', 'none', 'FontSize', 14);
 else
-    title('W-score by group');
+    title('W-score by group', 'FontSize', 14);
 end
 box on;
 
@@ -159,7 +163,8 @@ if nargin >= 4 && ~isempty(output_name)
 end
 
 % ===== Outputs =====
-w_vec  = w_med(:);
-p_vec  = p_vals(:);
-labels = varNames(:);
+w_vec   = w_med(:);
+p_vec   = p_vals(:);
+labels  = varNames(:);
+std_vec = w_std(:);
 end

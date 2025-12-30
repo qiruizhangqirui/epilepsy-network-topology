@@ -294,15 +294,15 @@ def main():
     else:
         print("[Filter] Warning: Column 'T1notUse' not found. Skipping exclusion.")
     
-    # Exclude subjects with missing IQ (no cognitive data)
-    if "IQ" in df.columns:
-        n_before = len(df)
-        df = df[df["IQ"].notna()].copy()
-        n_after = len(df)
-        if n_before != n_after:
-            print(f"[Filter] Excluded {n_before - n_after} subjects with missing IQ. Remaining: {n_after}")
-    else:
-        print("[Filter] Warning: Column 'IQ' not found. Skipping exclusion.")
+    # # Exclude subjects with missing IQ (no cognitive data)
+    # if "IQ" in df.columns:
+    #     n_before = len(df)
+    #     df = df[df["IQ"].notna()].copy()
+    #     n_after = len(df)
+    #     if n_before != n_after:
+    #         print(f"[Filter] Excluded {n_before - n_after} subjects with missing IQ. Remaining: {n_after}")
+    # else:
+    #     print("[Filter] Warning: Column 'IQ' not found. Skipping exclusion.")
 
     created_combo_cols = []
     for new_col, parts in COMBO_MAP.items():

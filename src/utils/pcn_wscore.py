@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+# =========================================================================
+# Script: pcn_wscore.py
+# -------------------------------------------------------------------------
+# Description:
+#   Utility functions for computing w-scores using PCNtoolkit.
+#   Includes:
+#     - pcn_wscore: Main function to fit normative model and compute deviation (w-score).
+#     - Helper functions for data standardization and I/O suppression.
+#
+# Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+# Date: 12/30/2025
+# =========================================================================
+
 import numpy as np
 import warnings
 import logging
@@ -12,6 +25,7 @@ from pcntoolkit.math_functions.basis_function import (
 )
 
 EPS = 1e-12
+
 
 
 def _to_2d(a):

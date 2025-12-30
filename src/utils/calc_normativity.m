@@ -1,14 +1,22 @@
 function [net_max, normv, nonnormv] = calc_normativity(Dice_coeff)
-% Compute normativity metrics from a Dice coefficient matrix.
+% =========================================================================
+% Function: calc_normativity
+% -------------------------------------------------------------------------
+% Description:
+%   Compute normativity metrics from a Dice coefficient matrix.
 %
-% Input
-%   Dice_coeff : [nAtoms x nTargets] double
+% Inputs:
+%   Dice_coeff - [nAtoms x nTargets] double matrix. 
 %                nTargets can be networks/components (cortical) or subcortical groups.
 %
-% Output
-%   net_max    : [1 x nTargets] network-wise (column-wise) maximum Dice
-%   normv      : scalar, mean(net_max)
-%   nonnormv   : scalar, 1 - mean(atom-wise maximum Dice)
+% Outputs:
+%   net_max    - [1 x nTargets] Network-wise (column-wise) maximum Dice
+%   normv      - Scalar, mean of net_max (Network Normativity)
+%   nonnormv   - Scalar, 1 - mean of atom-wise maximum Dice (Non-normativity)
+%
+% Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+% Date: 12/30/2025
+% =========================================================================
 
 % Handle empty input robustly
 if isempty(Dice_coeff)

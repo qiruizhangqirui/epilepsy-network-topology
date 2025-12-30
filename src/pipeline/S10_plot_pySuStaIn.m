@@ -47,8 +47,8 @@ end
 
 data_dir    = fullfile(project_root, 'data');
 result_dir  = fullfile(project_root, 'outputs');
-SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'GMV'); % if plot GMV
-%SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'Correspondence'); % if plot Correspondence
+% SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'GMV'); % if plot GMV
+SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'Correspondence'); % if plot Correspondence
 out_dir     = fullfile(SuStaIn_dir, 'plot');
 
 if ~exist(out_dir, 'dir'); mkdir(out_dir); end

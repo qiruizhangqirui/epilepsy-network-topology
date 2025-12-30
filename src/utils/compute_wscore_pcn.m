@@ -1,7 +1,26 @@
 function [w_scores, Resid, Yhat] = compute_wscore_pcn(X_cov_no_const, Y_all, idx_HP, n_blocks)
-% Compute w-scores using PCNtoolkit BLR (Python wrapper)
-% Block-wise parallelization over Y columns
-% n_blocks controls both number of blocks and number of parallel workers
+% =========================================================================
+% Function: compute_wscore_pcn
+% -------------------------------------------------------------------------
+% Description:
+%   Compute w-scores using PCNtoolkit BLR (Python wrapper).
+%   Supports block-wise parallelization over Y columns.
+%   'n_blocks' controls both number of blocks and number of parallel workers.
+%
+% Inputs:
+%   X_cov_no_const - Covariate matrix without constant term
+%   Y_all          - Data matrix (Target variables)
+%   idx_HP         - Logical index for healthy participants (Control group)
+%   n_blocks       - Number of blocks/parallel workers (default: 3)
+%
+% Outputs:
+%   w_scores       - Computed w-scores [N x P]
+%   Resid          - Residuals [N x P]
+%   Yhat           - Predicted values [N x P]
+%
+% Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+% Date: 12/30/2025
+% =========================================================================
 
 arguments
     X_cov_no_const double

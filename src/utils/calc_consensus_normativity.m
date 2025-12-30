@@ -1,5 +1,28 @@
 function [ConsensusDice_S200, ConsensusDice_17, TemplateNamesOut, nParcelPerNet17] = ...
     calc_consensus_normativity(NetMaxCell, TemplateNamesIn, cons)
+% =========================================================================
+% Function: calc_consensus_normativity
+% -------------------------------------------------------------------------
+% Description:
+%   Calculates consensus normativity metrics (Dice coefficients) across 
+%   multiple atlases or ICA components. It computes the weighted sum 
+%   of projected network maps and normalizes by the coverage count.
+%
+% Inputs:
+%   NetMaxCell      - Cell array of data matrices [Nsub x Mnet] for each template
+%   TemplateNamesIn - Cell array of template/atlas names
+%   cons            - Structure containing consensus constants and paths
+%                     (cons.NPARC, cons.P, cons.labels_all, etc.)
+%
+% Outputs:
+%   ConsensusDice_S200 - Consensus Dice scores for 200 parcels [Nsub x 200]
+%   ConsensusDice_17   - Consensus Dice scores aggregated to 17 networks [Nsub x 17]
+%   TemplateNamesOut   - Cell array of processed template names
+%   nParcelPerNet17    - Number of parcels per Yeo-17 network
+%
+% Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+% Date: 12/30/2025
+% =========================================================================
 
 Nsub  = size(NetMaxCell, 1);
 NPARC = cons.NPARC;

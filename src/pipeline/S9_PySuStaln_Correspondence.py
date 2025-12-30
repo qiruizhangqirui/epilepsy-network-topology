@@ -77,10 +77,9 @@ COMBO_MAP = {
 }
 
 # Candidate Biomarker Columns (Intersection with Excel columns will be used)
-# Renamed Dice_* to Correspondence_*
 candidate_cols = [
-    "Normativity (AS200Y17)",
-    "Non normativity (AS200Y17)",
+    "Normativity",
+    "Non normativity",
     "Correspondence_TempPar",
     "Correspondence_DefaultC",
     "Correspondence_DefaultB",
@@ -303,15 +302,15 @@ def main():
     else:
         print("[Filter] Warning: Column 'T1notUse' not found. Skipping exclusion.")
     
-    # Exclude subjects with missing IQ (no cognitive data)
-    if "IQ" in df.columns:
-        n_before = len(df)
-        df = df[df["IQ"].notna()].copy()
-        n_after = len(df)
-        if n_before != n_after:
-            print(f"[Filter] Excluded {n_before - n_after} subjects with missing IQ. Remaining: {n_after}")
-    else:
-        print("[Filter] Warning: Column 'IQ' not found. Skipping exclusion.")
+    # # Exclude subjects with missing IQ (no cognitive data)
+    # if "IQ" in df.columns:
+    #     n_before = len(df)
+    #     df = df[df["IQ"].notna()].copy()
+    #     n_after = len(df)
+    #     if n_before != n_after:
+    #         print(f"[Filter] Excluded {n_before - n_after} subjects with missing IQ. Remaining: {n_after}")
+    # else:
+    #     print("[Filter] Warning: Column 'IQ' not found. Skipping exclusion.")
 
     created_combo_cols = []
     # COMBO_MAP processing if items exist

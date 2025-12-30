@@ -11,7 +11,8 @@
 %   3. Max-T permutation testing and statistical mapping.
 %
 % Note:
-%   - Requires 'permuztest'.
+%   - Requires 'permuztest': https://github.com/mickcrosse/PERMUTOOLS
+%   - Requires 'ENIGMA' toolbox (plot_cortical, parcel_to_surface): https://github.com/MICA-MNI/ENIGMA
 %   - Requires PCNtoolkit setup in Python.
 %
 % Inputs:

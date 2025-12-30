@@ -14,7 +14,10 @@
 %       5. 200-ROI surface maps (Permutation tests).
 %
 % Note:
-%   - Requires 'permuztest' (permutation testing) and 'mafdr' (FDR).
+%   - Requires 'permuztest' (permutation testing): https://github.com/mickcrosse/PERMUTOOLS
+%   - Requires 'spider_plot' (radar plots): https://github.com/NewGuy012/spider_plot
+%   - Requires 'ENIGMA' toolbox (plot_cortical, parcel_to_surface): https://github.com/MICA-MNI/ENIGMA
+%   - Requires 'mafdr' (Bioinformatics Toolbox).
 %
 % Inputs:
 %   - outputs/Correspondence_Wscore.mat
@@ -178,6 +181,9 @@ nperm       = 10000;
 color_range = [-0.6 0.6];
 cmap_name   = 'RdBu_r';
 
+% Initialize Stats Storage
+Correspondence_stats = struct();
+
 %% =========================================================
 % PART 1: Normativity / Non-normativity
 % =========================================================
@@ -211,7 +217,11 @@ for iSite = 1:numel(siteNames)
                 w_vec = W(:,iAtlas);
                 out = fullfile(out_dir, sprintf('%s_%s_Normativity_%s_box.tiff', sitename, dataType, Atlas_type{iAtlas}));
                 label_str = sprintf('%s | %s | Normativity (%s)', sitename, dataType, Atlas_type{iAtlas});
-                plot_group_wscore(w_vec, groupTable, label_str, out);
+                [w_med, p_val, labs, w_std] = plot_group_wscore(w_vec, groupTable, label_str, out);
+                Correspondence_stats.(sitename).(dataType).Normativity.(Atlas_type{iAtlas}).w_median = w_med;
+                Correspondence_stats.(sitename).(dataType).Normativity.(Atlas_type{iAtlas}).p_val = p_val;
+                Correspondence_stats.(sitename).(dataType).Normativity.(Atlas_type{iAtlas}).w_std = w_std;
+                Correspondence_stats.(sitename).(dataType).Normativity.(Atlas_type{iAtlas}).labels = labs;
                 close all;
             end
         else
@@ -226,7 +236,11 @@ for iSite = 1:numel(siteNames)
             w_vec = wscores.(sitename).(dataType).Measure.Mean_Normativity.W; % Ns x 1
             out = fullfile(out_dir, sprintf('%s_%s_MeanNorm_box.tiff', sitename, dataType));
             label_str = sprintf('%s | %s | Mean Normativity', sitename, dataType);
-            plot_group_wscore(w_vec, groupTable, label_str, out);
+            [w_med, p_val, labs, w_std] = plot_group_wscore(w_vec, groupTable, label_str, out);
+            Correspondence_stats.(sitename).(dataType).Mean_Normativity.w_median = w_med;
+            Correspondence_stats.(sitename).(dataType).Mean_Normativity.p_val = p_val;
+            Correspondence_stats.(sitename).(dataType).Mean_Normativity.w_std = w_std;
+            Correspondence_stats.(sitename).(dataType).Mean_Normativity.labels = labs;
             close all;
         else
             warning('Missing %s.%s.Measure.Mean_Normativity.W', sitename, dataType);
@@ -244,7 +258,11 @@ for iSite = 1:numel(siteNames)
                 w_vec = W(:,iAtlas);
                 out = fullfile(out_dir, sprintf('%s_%s_NonNorm_%s_box.tiff', sitename, dataType, Atlas_type{iAtlas}));
                 label_str = sprintf('%s | %s | Non-normativity (%s)', sitename, dataType, Atlas_type{iAtlas});
-                plot_group_wscore(w_vec, groupTable, label_str, out);
+                [w_med, p_val, labs, w_std] = plot_group_wscore(w_vec, groupTable, label_str, out);
+                Correspondence_stats.(sitename).(dataType).Non_normativity.(Atlas_type{iAtlas}).w_median = w_med;
+                Correspondence_stats.(sitename).(dataType).Non_normativity.(Atlas_type{iAtlas}).p_val = p_val;
+                Correspondence_stats.(sitename).(dataType).Non_normativity.(Atlas_type{iAtlas}).w_std = w_std;
+                Correspondence_stats.(sitename).(dataType).Non_normativity.(Atlas_type{iAtlas}).labels = labs;
                 close all;
             end
         else
@@ -259,7 +277,11 @@ for iSite = 1:numel(siteNames)
             w_vec = wscores.(sitename).(dataType).Measure.Mean_Non_normativity.W; % Ns x 1
             out = fullfile(out_dir, sprintf('%s_%s_MeanNonNorm_box.tiff', sitename, dataType));
             label_str = sprintf('%s | %s | Mean Non-normativity', sitename, dataType);
-            plot_group_wscore(w_vec, groupTable, label_str, out);
+            [w_med, p_val, labs, w_std] = plot_group_wscore(w_vec, groupTable, label_str, out);
+            Correspondence_stats.(sitename).(dataType).Mean_Non_normativity.w_median = w_med;
+            Correspondence_stats.(sitename).(dataType).Mean_Non_normativity.p_val = p_val;
+            Correspondence_stats.(sitename).(dataType).Mean_Non_normativity.w_std = w_std;
+            Correspondence_stats.(sitename).(dataType).Mean_Non_normativity.labels = labs;
             close all;
         else
             warning('Missing %s.%s.Measure.Mean_Non_normativity.W', sitename, dataType);
@@ -440,7 +462,12 @@ for iSite = 1:numel(siteNames)
         GT_plot = get_GT_subset(groupTable, PlotGroupsBySite.(sitename));
         out = fullfile(out_dir, sprintf('%s_%s_Consensus17net_box.tiff', sitename, dataType));
 
-        plot_group_wscore_by_network(Data17, GT_plot, NetLabels, out);
+        [p_val, p_maxT, w_med, w_std] = plot_group_wscore_by_network(Data17, GT_plot, NetLabels, out);
+        Correspondence_stats.(sitename).(dataType).Consensus.AS200K17_17network.p_val = p_val;
+        Correspondence_stats.(sitename).(dataType).Consensus.AS200K17_17network.p_maxT = p_maxT;
+        Correspondence_stats.(sitename).(dataType).Consensus.AS200K17_17network.w_median = w_med;
+        Correspondence_stats.(sitename).(dataType).Consensus.AS200K17_17network.w_std = w_std;
+        Correspondence_stats.(sitename).(dataType).Consensus.AS200K17_17network.NetLabels = NetLabels;
         close all;
 
         % B) Radar plot per group
@@ -465,14 +492,15 @@ for iSite = 1:numel(siteNames)
                 if p_perm(nn) < 0.01; NetStar{nn} = [NetStar{nn}, '**'];
                 elseif p_perm(nn) < 0.05; NetStar{nn} = [NetStar{nn}, '*']; end
             end
+            NetStar = cellfun(@(x) strrep(x, '_', ''), NetStar, 'UniformOutput', false);
 
             mu_plot = [zeros(1, numel(mu)); mu];
-            f = figure('Color','w','Position',[100 100 760 640]);
+            f = figure('Color','w','Position',[100 100 900 640]);
             spider_plot(mu_plot, ...
                 'AxesLabels', NetStar, ...
                 'AxesLimits', repmat(r_lim, numel(mu), 1)', ...
                 'AxesInterval', 5, 'AxesPrecision', 2, 'AxesDisplay', 'one', ...
-                'AxesFontSize', 10, 'LabelFontSize', 12, 'LineWidth', [1.5 2]);
+                'AxesFontSize', 10, 'LabelFontSize', 18, 'LineWidth', [1.5 2]);
 
             title(sprintf('%s | %s | %s | 17-net radar (max-T)', sitename, dataType, gname), 'Interpreter','none');
             out = fullfile(out_dir, sprintf('%s_%s_%s_Radar17.tiff', sitename, dataType, strrep(gname,' ','_')));
@@ -509,37 +537,42 @@ for iSite = 1:numel(siteNames)
 
             out = fullfile(out_dir_cnr, sprintf('%s_%s_CanonicalNetworkRepresentation_%s_box.tiff', sitename, dataType, tpl_field));
             GT_plot = get_GT_subset(groupTable, PlotGroupsBySite.(sitename));
+            NetLabels = cellfun(@(x) strrep(x, '_', ''), NetLabels, 'UniformOutput', false);
 
-            [~, pmaxT_matrix] = plot_group_wscore_by_network(DataNet, GT_plot, NetLabels, out);
+            [p_val, pmaxT_matrix, w_med, w_std] = plot_group_wscore_by_network(DataNet, GT_plot, NetLabels, out);
+            Correspondence_stats.(sitename).(dataType).CNR.(tpl_field).p_val = p_val;
+            Correspondence_stats.(sitename).(dataType).CNR.(tpl_field).p_maxT = pmaxT_matrix;
+            Correspondence_stats.(sitename).(dataType).CNR.(tpl_field).w_median = w_med;
+            Correspondence_stats.(sitename).(dataType).CNR.(tpl_field).w_std = w_std;
             close all;
 
             % Subcortical surface plot
-            if strcmpi(tpl_field, 'Subcortical')
-                out_dir_sub = fullfile(out_dir_cnr, 'Subcortical_Surface');
-                if ~exist(out_dir_sub, 'dir'); mkdir(out_dir_sub); end
-
-                group_list = GT_plot.Properties.VariableNames;
-                if size(DataNet,2) > numel(NetLabels); DataNet_use = DataNet(:, 1:numel(NetLabels));
-                else; DataNet_use = DataNet; end
-
-                for gg = 1:numel(group_list)
-                    gname = group_list{gg};
-                    idx_g = GT_plot.(gname) > 0;
-                    if sum(idx_g) < 3; continue; end
-
-                    mu = mean(DataNet_use(idx_g, :), 1, 'omitnan');
-
-                    out_mu = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
-                    parcel_to_Subsurface([mu,mu], out_mu, color_range, cmap_name);
-
-                    pmaxT = pmaxT_matrix(gg, 1:numel(NetLabels));
-                    h_maxT = pmaxT < alpha_maxT;
-                    mu_maxT = mu; mu_maxT(~h_maxT) = 0;
-
-                    out_mu_maxT = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW_Tmax.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
-                    parcel_to_Subsurface([mu_maxT,mu_maxT], out_mu_maxT, color_range, cmap_name);
-                end
-            end
+%             if strcmpi(tpl_field, 'Subcortical')
+%                 out_dir_sub = fullfile(out_dir_cnr, 'Subcortical_Surface');
+%                 if ~exist(out_dir_sub, 'dir'); mkdir(out_dir_sub); end
+% 
+%                 group_list = GT_plot.Properties.VariableNames;
+%                 if size(DataNet,2) > numel(NetLabels); DataNet_use = DataNet(:, 1:numel(NetLabels));
+%                 else; DataNet_use = DataNet; end
+% 
+%                 for gg = 1:numel(group_list)
+%                     gname = group_list{gg};
+%                     idx_g = GT_plot.(gname) > 0;
+%                     if sum(idx_g) < 3; continue; end
+% 
+%                     mu = mean(DataNet_use(idx_g, :), 1, 'omitnan');
+% 
+%                     out_mu = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
+%                     parcel_to_Subsurface([mu,mu], out_mu, color_range, cmap_name);
+% 
+%                     pmaxT = pmaxT_matrix(gg, 1:numel(NetLabels));
+%                     h_maxT = pmaxT < alpha_maxT;
+%                     mu_maxT = mu; mu_maxT(~h_maxT) = 0;
+% 
+%                     out_mu_maxT = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW_Tmax.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
+%                     parcel_to_Subsurface([mu_maxT,mu_maxT], out_mu_maxT, color_range, cmap_name);
+%                 end
+%             end
             close all;
         end
     end
@@ -619,6 +652,8 @@ for iSite = 1:numel(siteNames)
         end
     end
 end
-
-save(fullfile(out_dir, 'AS200K17_200ROI_stats.mat'), 'StatOut', '-v7.3');
+% 
+% save(fullfile(out_dir, 'AS200K17_200ROI_stats.mat'), 'StatOut', '-v7.3');
+Correspondence_stats.AS200K17_200ROI = StatOut;
+save(fullfile(result_dir, 'Correspondence_stats.mat'), 'Correspondence_stats', '-v7.3');
 fprintf('\nDONE. Outputs saved to:\n  %s\n', out_dir);

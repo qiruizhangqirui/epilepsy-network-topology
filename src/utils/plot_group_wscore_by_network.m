@@ -1,100 +1,109 @@
-function [pval_matrix, pmaxT_matrix] = plot_group_wscore_by_network( ...
+function [pval_matrix, pmaxT_matrix, median_matrix, std_matrix] = plot_group_wscore_by_network( ...
     Data, GroupTable, Atlas_network_name, output_name)
-% 绘制每组在每个网络的 W-score 箱线图，并进行：
-%   1) 单样本 t 检验 vs 0 → 原始 p
-%   2) 族内 max-T 置换校正（Tmax）→ p_perm
+% =========================================================================
+% Function: plot_group_wscore_by_network
+% -------------------------------------------------------------------------
+% Description:
+%   Draws W-score boxplots for each network across multiple groups, performing:
+%     1) One-sample t-test vs 0 -> raw p-values
+%     2) Max-T permutation correction (Family-wise correction) -> p_perm
 %
-% 输入:
-%   - Data: Nsub × Nnet 的 W-score 矩阵
-%   - GroupTable: Nsub × Ng 的分组表（列为任意组名；>0 视作属于该组）
-%   - Atlas_network_name: 1 × Nnet 的 cell，网络名称
-%   - output_name: 输出图像文件路径（建议含扩展名；若不含，本函数以TIFF导出）
+% Inputs:
+%   Data               - Nsub x Nnet W-score matrix
+%   GroupTable         - Nsub x Ng Group Table (Columns = group names; >0 = member)
+%   Atlas_network_name - 1 x Nnet cell array of network names
+%   output_name        - Output file path (TIFF export recommended)
 %
-% 输出:
-%   - pval_matrix : Ng_valid × Nnet 的原始 t 检验 p 值
-%   - pmaxT_matrix: Ng_valid × Nnet 的 Tmax 校正后 p 值
+% Outputs:
+%   pval_matrix        - Ng_valid x Nnet matrix of raw p-values
+%   pmaxT_matrix       - Ng_valid x Nnet matrix of Tmax-corrected p-values
+%   median_matrix      - Ng_valid x Nnet matrix of medians
+%   std_matrix         - Ng_valid x Nnet matrix of standard deviations
 %
-% 备注：
-%   - 显著性标注采用：p<0.05(*)；Tmax<0.05(**)；Tmax<0.01(***)
-%   - Tmax 置换参数：alpha_maxT=0.05, nperm=10000, 双尾，族内校正
+% Notes:
+%   - Significance annotation: p<0.05(*); Tmax<0.05(**); Tmax<0.01(***)
+%   - Tmax settings: alpha_maxT=0.05, nperm=10000, two-tailed, family-wise correction
+%   - Dependency: permuztest
 %
-% 依赖：
-%   - permuztest(G, 0, sigma, 'nperm', 10000, 'alpha', 0.05, 'tail','both','correct',true)
+% Author: Qirui Zhang, Farber Institute for Neuroscience, Thomas Jefferson University
+% Date: 12/30/2025
+% =========================================================================
 
-% ---------------- 配置 ----------------
-remove_outliers = true;     % y 轴范围是否做稳健裁剪（不影响统计）
+% ---------------- Configuration ----------------
+remove_outliers = true;     % Robust clipping of Y-axis (does not affect stats)
 outlier_pct     = [0.1, 99.9];
 
 alpha_maxT = 0.05;
 nperm      = 10000;
 
-% ---------------- 检查输入 ----------------
+% ---------------- Check Inputs ----------------
 [Nsub, Nnet] = size(Data);
 if height(GroupTable) ~= Nsub
-    error('Data 的行数 (%d) 与 GroupTable 的行数 (%d) 不一致。', Nsub, height(GroupTable));
+    error('Data rows (%d) must match GroupTable rows (%d).', Nsub, height(GroupTable));
 end
 if numel(Atlas_network_name) ~= Nnet
-    error('Atlas_network_name 的长度 (%d) 必须等于 Data 的列数 (%d)。', numel(Atlas_network_name), Nnet);
+    error('Atlas_network_name length (%d) must match Data columns (%d).', numel(Atlas_network_name), Nnet);
 end
 
-% ---------------- 选择有效组列（非全0/NaN）----------------
+% ---------------- Select Valid Groups (Non-empty) ----------------
 all_names   = GroupTable.Properties.VariableNames;
 Ng_all      = numel(all_names);
 valid_mask  = false(1, Ng_all);
 for j = 1:Ng_all
     col = GroupTable{:, j};
     if ~isnumeric(col) && ~islogical(col)
-        error('GroupTable 的列 "%s" 不是数值或逻辑类型。', all_names{j});
+        error('GroupTable column "%s" is not numeric or logical.', all_names{j});
     end
     m = (col > 0) & isfinite(col);
     valid_mask(j) = any(m);
 end
 
 if ~any(valid_mask)
-    error('GroupTable 中没有含有成员的组（所有列均为全0/NaN）。');
+    error('No valid groups found in GroupTable (all columns are 0/NaN).');
 end
 
 Group_labels = all_names(valid_mask);
 GroupMat     = GroupTable{:, valid_mask};
 Ngroup       = numel(Group_labels);
 
-% ---------------- 初始化 ----------------
+% ---------------- Initialization ----------------
 colors         = lines(max(Ngroup, 5));
-pval_matrix    = nan(Ngroup, Nnet);   % 每组 vs 0 的原始 p
-pmaxT_matrix   = nan(Ngroup, Nnet);   % 每组 × 网络的 Tmax 校正 p
-group_medians  = nan(Ngroup, Nnet);   % 中位数记录
-group_data     = cell(Ngroup,1);      % 存每组的 n×Nnet 数据，供 Tmax 使用
+pval_matrix    = nan(Ngroup, Nnet);   % Raw p vs 0
+pmaxT_matrix   = nan(Ngroup, Nnet);   % Tmax corrected p
+group_medians  = nan(Ngroup, Nnet);   % For plotting
+group_stds     = nan(Ngroup, Nnet);   % For stats
+group_data     = cell(Ngroup,1);      % Store group data for Tmax
 
-% x 位置设置
+% X-axis setup
 x_spacing   = 1.2;
 x_positions = (0:(Nnet-1)) * x_spacing;
-x_shift     = linspace(-0.4, 0.4, Ngroup);  % group 偏移
+x_shift     = linspace(-0.4, 0.4, Ngroup);  % Group offset
 
-% ---------------- 画布 ----------------
-figure('Units','normalized','Position',[0.05 0.1 0.9 0.7]); hold on;
+% ---------------- Figure Canvas ----------------
+figure('Units','normalized','Position',[0.05 0.1 0.9 0.5]); hold on;
 box_width   = 0.15;
 star_offset = 0.2;
 
-% 灰色参考线 y = 0
+% Grey reference line y = 0
 plot([min(x_positions)-1, max(x_positions)+1], [0 0], ...
     'Color', [0.7 0.7 0.7], 'LineStyle', '-', 'LineWidth', 1.2);
 
-% 初始化 boxchart 句柄（用于 legend）
+% Initialize handles for legend
 box_handles = gobjects(Ngroup,1);
 
-% ---------------- 绘制（并做 t 检验）----------------
+% ---------------- Plotting & T-Test ----------------
 for i = 1:Nnet
     for g = 1:Ngroup
-        idx = GroupMat(:, g) > 0;           % >0 视为属于该组
+        idx = GroupMat(:, g) > 0;           % >0 implies membership
         this_data = Data(idx, i);
         if isempty(this_data), continue; end
 
-        % 记录该组的全网络数据（用于 Tmax）
+        % Store full network data for Tmax
         if i == 1
-            group_data{g} = Data(idx, :);   % n × Nnet
+            group_data{g} = Data(idx, :);   % n X Nnet
         end
 
-        % 绘图
+        % Plot
         x_pos = x_positions(i) + x_shift(g);
         h = boxchart(x_pos * ones(sum(idx),1), this_data, ...
             'BoxFaceColor', colors(g,:), ...
@@ -103,42 +112,43 @@ for i = 1:Nnet
             'MarkerStyle', 'none');
 
         if i == 1
-            box_handles(g) = h;  % 首个网络记录句柄用于 legend
+            box_handles(g) = h;
         end
 
-        % 单样本 t 检验 vs 0（原始 p）
+        % One-sample t-test vs 0 (Raw p)
         [~, p] = ttest(this_data, 0);
         pval_matrix(g, i) = p;
 
-        % 中位数（用于星标放置）
+        % Median for positioning stars
         group_medians(g, i) = median(this_data);
+        group_stds(g, i)    = std(this_data);
     end
 end
 
-% ---------------- Tmax（max-T）置换校正（逐组，一次性覆盖所有网络）----------------
+% ---------------- Tmax (max-T) Permutation (Group-wise) ----------------
 for g = 1:Ngroup
-    Xg = group_data{g};          % n × Nnet
+    Xg = group_data{g};          % n x Nnet
     if isempty(Xg), continue; end
 
-    % 列标准差作为 sigma，防止 0 与非有限
+    % Standard deviation for sigma (avoid 0/inf)
     sigma = std(Xg, 0, 1);
     sigma(sigma == 0 | ~isfinite(sigma)) = eps;
 
     try
-        % 双尾，族内校正
-        % 返回 p_perm（1×Nnet）：在家族内经 max-T 校正后的 p 值
+        % Two-tailed, Family-wise correction
+        % Returns p_perm (1 x Nnet)
         [~, p_perm, ~, ~] = permuztest(Xg, 0, sigma, ...
             'nperm', nperm, 'alpha', alpha_maxT, ...
             'tail', 'both', 'correct', true);
     catch ME
-        warning('组 %s 的 Tmax 置换失败：%s。请确认 permuztest 在路径上。', Group_labels{g}, ME.message);
+        warning('Tmax permutation failed for group %s: %s. Check permuztest.', Group_labels{g}, ME.message);
         p_perm = nan(1, size(Xg,2));
     end
 
     pmaxT_matrix(g, :) = p_perm;
 end
 
-% ---------------- 显著性标注（*, **, ***）----------------
+% ---------------- Significance Annotation (*, **, ***) ----------------
 for i = 1:Nnet
     for g = 1:Ngroup
         p_raw  = pval_matrix(g, i);
@@ -162,7 +172,7 @@ for i = 1:Nnet
     end
 end
 
-% ---------------- Y 轴范围设置（仅影响显示）----------------
+% ---------------- Y-axis Clipping (Visualization Only) ----------------
 all_vals = Data(:);
 all_vals = all_vals(~isnan(all_vals));
 if ~isempty(all_vals)
@@ -178,7 +188,7 @@ if ~isempty(all_vals)
     ylim([q_low - y_range*y_margin_ratio, q_high + y_range*y_margin_ratio]);
 end
 
-% ---------------- 坐标轴与标签 ----------------
+% ---------------- Axes & Labels ----------------
 xticks(x_positions);
 xticklabels(Atlas_network_name);
 xtickangle(45);
@@ -188,7 +198,7 @@ title('Group W-score per Network (t-test & max-T)');
 xlim([min(x_positions)-0.8, max(x_positions)+0.8]);
 box on;
 
-% ---------------- 保存图像 ----------------
+% ---------------- Save Figure ----------------
 if nargin >= 4 && ~isempty(output_name)
     [~,~,ext] = fileparts(output_name);
     if isempty(ext)
@@ -198,5 +208,9 @@ if nargin >= 4 && ~isempty(output_name)
     end
 end
 % close(gcf);
+
+% Outputs
+median_matrix = group_medians;
+std_matrix    = group_stds;
 
 end
