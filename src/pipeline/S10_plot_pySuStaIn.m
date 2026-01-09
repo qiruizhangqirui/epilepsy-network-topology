@@ -47,7 +47,7 @@ end
 
 data_dir    = fullfile(project_root, 'data');
 result_dir  = fullfile(project_root, 'outputs');
-% SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'GMV'); % if plot GMV
+%SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'GMV'); % if plot GMV
 SuStaIn_dir = fullfile(result_dir, 'PySuStaln', 'Correspondence'); % if plot Correspondence
 out_dir     = fullfile(SuStaIn_dir, 'plot');
 
@@ -64,6 +64,9 @@ assignment_file   = fullfile(data_dir, 'assignment_34.mat');
 
 % Load network assignment mapping (34 ROIs to 200 parcels)
 load(assignment_file, 'network_assignment');
+
+% Define stage ranges for grouping
+stage_ranges = {[0 0], [1 5], [6 10],[11 20], [21 50]};
 
 %% =========================
 % Part 2: Load Data and Define Groups
@@ -199,8 +202,6 @@ end
 %% Create Stage Range Summaries
 fprintf('\n=== Creating Stage Range Summaries ===\n');
 
-% Define stage ranges for grouping
-stage_ranges = {[0 0], [1 5], [6 10], [11 50]};
 
 for k = 1:numel(Kfolders)
     outdir_perK = fullfile(out_dir, Kfolders{k});

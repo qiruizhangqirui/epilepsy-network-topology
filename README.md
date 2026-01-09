@@ -1,97 +1,94 @@
-# Epilepsy Network Correspondence & Normative Modeling Pipeline
+# Epilepsy Network Topology Analysis
 
-This repository contains a MATLAB/Python pipeline for analyzing functional network correspondence and computing W-scores using normative modeling (PCNtoolkit) in epilepsy patients.
+This repository contains the complete analysis pipeline for the study on functional-structural network correspondence and hubness comparisons in epilepsy. The project integrates multimodal MRI data (fMRI, sMRI) to explore network topology alterations in Focal Epilepsy (FE) and Temporal Lobe Epilepsy (TLE), using Normative Modeling and Subtype and Stage Inference (SuStaIn).
 
-## Project Structure
+## Background
 
-The project is organized as follows:
+The primary objective of this project is to investigate the decoupling between functional and structural connectivity in epilepsy. We employ:
 
-```text
-/
-├── data/                 # Input data (Subjects.xlsx, atlases, raw derivatives)
-├── outputs/              # Generated results and figures
-├── src/
-│   ├── pipeline/         # Main analysis scripts (S1 - S5)
-│   └── utils/            # Helper functions and Python wrappers
-└── README.md             # This file
-```
+- **Network Correspondence**: Quantifying the overlap between individual functional networks and normative structural atlases.
+- **Hubness Mapping**: Identifying critical network hubs and their disruption.
+- **Normative Modeling**: Using W-scores to map individual deviations from a healthy control reference model, accounting for age and sex.
+- **Multivariate Association**: Sparse Canonical Correlation Analysis (sCCA) to link network metrics with clinical variables.
+- **Disease Progression Modeling**: SuStaIn to identify distinct neurodegenerative subtypes and stages.
 
-## Setup & Requirements
+## Pipeline Overview
 
-### Prerequisites
+The analysis is organized into sequential steps (`S1` to `S12`), categorized by their analytical focus.
 
-1. **MATLAB** (with Statistics and Machine Learning Toolbox, Bioinformatics Toolbox).
-2. **Python 3.x** (with `pcntoolkit`, `numpy`, `scipy`, `pandas`).
-3. **PCNtoolkit**: Ensure the python environment where PCNtoolkit is installed is active or accessible by MATLAB.
+### 1. Data Organization & Preprocessing
 
-### External Dependencies
+* **S1_Org_outputs.m**:  
+    Organizes raw derivatives (CSV, NIfTI) into a structured project directory. It aggregates subject metadata and computes initial geometric overlaps (Dice coefficients) for subcortical structures.
 
-The following MATLAB toolboxes/functions must be installed/added to path:
+### 2. Network Correspondence Analysis
 
-- **PERMUTOOLS** (`permuztest`): [https://github.com/mickcrosse/PERMUTOOLS](https://github.com/mickcrosse/PERMUTOOLS)
-- **spider_plot** (`spider_plot`): [https://github.com/NewGuy012/spider_plot](https://github.com/NewGuy012/spider_plot) (Used in S4)
-- **ENIGMA Toolbox** (`plot_cortical`, `parcel_to_surface`): [https://github.com/MICA-MNI/ENIGMA](https://github.com/MICA-MNI/ENIGMA)
+* **S2_correspondence_analysis.m**:  
+    Calculates the correspondence (overlap) between subject-specific functional networks and standard functional atlases (e.g., Yeo 7/17 networks). Defines metrics like "Normativity" and "Maximum Match".
+- **S3_correspondence_normative_modelling.m**:  
+    Applies normative modeling (using `PCNtoolkit`) to the correspondence metrics. Computes W-scores (Z-scores adjusted for covariates) to quantify patient-specific deviations.
+- **S4_correspondence_statistic.m**:  
+    Performs group-level statistical comparisons of W-scores (Patients vs. Controls). Includes False Discovery Rate (FDR) correction and generates visualization plots (Boxplots, Radar plots, Brain surfaces).
 
-### Configuration
+### 3. Hubness & Gray Matter Analysis
 
-The pipeline uses **relative paths** automatically. No manual `config.m` is required.
+* **S5_hubmess_pipeline.m**:  
+    Analyzes Functional Hubness maps. Similar to S3, it extracts ROI-based hubness metrics, performs normative modeling, and maps statistical deviations on the brain surface.
+- **S6_TJU_GM_pipeline.m**:  
+    External validation processing for the TJU cohort, aiming to replicate findings using Gray Matter Volume (GMV) or other structural metrics.
 
-- Ensure all raw data (`Subjects.xlsx`, `NCT_Derivatives`, `SPARK_Derivatives`, `NCT_atlases`) are placed inside the `data/` folder.
+### 4. Multivariate & Progression Modeling
 
-## Usage Pipeline
+* **S7_prepare_data_for_CCA_SusStain.m**:  
+    Aggregates all computed features (Correspondence W-scores, Hubness W-scores, GMV, Clinical Demographics) into a single dataset for advanced modeling.
+- **S8_CCA.R**:  
+    Runs Sparse Canonical Correlation Analysis (sCCA) to identify latent modes of association between brain network deviations and clinical phenotypes (e.g., duration of epilepsy, cognitive scores).
+- **S9_PySuStaln_Correspondence.py**:  
+    Executes the SuStaIn algorithm (Subtype and Stage Inference). It identifies distinct temporal progression patterns (subtypes) of network correspondence loss across the patient population.
+- **S10_plot_pySuStaIn.m** & **S11_pySuStaIn_statisitic.m**:  
+    Visualize SuStaIn outputs:
+  - Subtype probability maps.
+  - Staging progression diagrams.
+  - Group-wise statistics of assigned subtypes and stages.
 
-Run the scripts in `src/pipeline/` in the following order:
+### 5. Validation
 
-### 1. Organize Inputs
+* **S12_Validation.m**:  
+    Performs cross-cohort validation (e.g., comparing JLH and TJU sites). Includes:
+  - Consistency checks of W-scores across sites.
+  - Spatial correlation analysis (Spin tests) to verify topological similarity of findings.
 
-**Script:** `src/pipeline/S1_Org_outputs.m`
+## Dependencies
 
-- **Purpose**: Scans `NCT_Derivatives` (correspondence CSVs) and `SPARK_Derivatives` (Hubness NIfTIs).
-- **Output**: Aggregates data into `outputs/All_derivatives_struct.mat`.
+### MATLAB
 
-### 2. Correspondence Analysis
+- **Statistics and Machine Learning Toolbox**
+- **Bioinformatics Toolbox**
+- **External Toolboxes** (included in `src/utils` or required externally):
+  - `PCNtoolkit` (MATLAB wrapper)
+  - `ENIGMA Toolbox` (for Spin tests/Surface plotting)
+  - `BrainNet Viewer` or `SurfStat` (for visualization)
 
-**Script:** `src/pipeline/S2_correspondence_analysis.m`
+### Python
 
-- **Purpose**: Computes network correspondence measures (Dice coefficients) between subject-specific networks and standard atlases (e.g., Yeo 17, Glasser, HCP ICA).
-- **Output**: `outputs/Correspondence_measures.mat`.
+- `numpy`, `pandas`, `scipy`
+- `pySuStaIn` (for S9)
+- `pcn_wscore` (custom wrapper for normative modeling)
 
-### 3. Normative Modeling (Correspondence)
+### R
 
-**Script:** `src/pipeline/S3_correspondence_normative_modelling.m`
+- `PMA` (Penalized Multivariate Analysis for CCA)
+- `ggplot2` (for visualization)
 
-- **Purpose**: Trains normative models (using Healthy Controls as baseline) and computes **W-scores** for correspondence measures.
-- **Method**: Uses `PCNtoolkit` (Bayesian Linear Regression) via Python integration.
-- **Output**: `outputs/Correspondence_Wscore.mat`.
+## Usage
 
-### 4. Statistical Analysis
+1. **Setup**: Ensure all data is placed in the root directory as specified in `S1`.
+2. **Run Sequentially**: Execute scripts `S1` through `S12` in order.
+    - MATLAB scripts should be run from the `src/pipeline` directory.
+    - Python/R scripts are called for specific modeling steps (S8, S9).
+3. **Configuration**: Check the "header" section of each script to adjust paths and parameters (e.g., `Project_Dir`, `Atlas_Name`).
 
-**Script:** `src/pipeline/S4_correspondence_statistic.m`
+## Citation
 
-- **Purpose**: Performs group statistical analysis on W-scores.
-- **Features**:
-  - Boxplots per group/atlas.
-  - Matrix plots of Normativity/Non-normativity.
-  - Radar plots for 17-network profiles.
-  - Cortical surface visualizations (using Schaefer 200 parcellation).
-- **Output**: Figures and stats in `outputs/correspondence_statistic/`.
-
-### 5. Hubness Analysis
-
-**Script:** `src/pipeline/S5_hubmess_pipeline.m`
-
-- **Purpose**: Separate pipeline for "Hubness" map analysis.
-- **Steps**:
-    1. Extracts ROI means from Hubness maps.
-    2. Computes W-scores using normative modeling.
-    3. Generates statistical maps (Surface/Volume).
-- **Output**: `outputs/hubness_statistic/`.
-
-## Key Utility Functions
-
-Located in `src/utils/`:
-
-- `pcn_wscore.py`: Python wrapper for PCNtoolkit.
-- `compute_wscore_pcn.m`: MATLAB interface to the Python wrapper.
-- `calc_consensus_normativity.m`: Helper for consensus metric calculation.
-- `plot_*.m`: Various plotting utilities for boxplots, surfaces, and matrices.
+If you use this code or pipeline, please cite:
+> **[Placeholder: Zhang et al., "Epilepsy Network Topology...", 2026]**
