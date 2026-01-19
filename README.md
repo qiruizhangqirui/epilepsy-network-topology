@@ -18,13 +18,14 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 ### 1. Data Organization & Preprocessing
 
-* **S1_Org_outputs.m**:  
+- **S1_Org_outputs.m**:  
     Organizes raw derivatives (CSV, NIfTI) into a structured project directory. It aggregates subject metadata and computes initial geometric overlaps (Dice coefficients) for subcortical structures.
 
 ### 2. Network Correspondence Analysis
 
-* **S2_correspondence_analysis.m**:  
+- **S2_correspondence_analysis.m**:  
     Calculates the correspondence (overlap) between subject-specific functional networks and standard functional atlases (e.g., Yeo 7/17 networks). Defines metrics like "Normativity" and "Maximum Match".
+
 - **S3_correspondence_normative_modelling.m**:  
     Applies normative modeling (using `PCNtoolkit`) to the correspondence metrics. Computes W-scores (Z-scores adjusted for covariates) to quantify patient-specific deviations.
 - **S4_correspondence_statistic.m**:  
@@ -32,15 +33,17 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 ### 3. Hubness & Gray Matter Analysis
 
-* **S5_hubmess_pipeline.m**:  
+- **S5_hubmess_pipeline.m**:  
     Analyzes Functional Hubness maps. Similar to S3, it extracts ROI-based hubness metrics, performs normative modeling, and maps statistical deviations on the brain surface.
+
 - **S6_TJU_GM_pipeline.m**:  
     External validation processing for the TJU cohort, aiming to replicate findings using Gray Matter Volume (GMV) or other structural metrics.
 
 ### 4. Multivariate & Progression Modeling
 
-* **S7_prepare_data_for_CCA_SusStain.m**:  
+- **S7_prepare_data_for_CCA_SusStain.m**:  
     Aggregates all computed features (Correspondence W-scores, Hubness W-scores, GMV, Clinical Demographics) into a single dataset for advanced modeling.
+
 - **S8_CCA.R**:  
     Runs Sparse Canonical Correlation Analysis (sCCA) to identify latent modes of association between brain network deviations and clinical phenotypes (e.g., duration of epilepsy, cognitive scores).
 - **S9_PySuStaln_Correspondence.py**:  
@@ -53,7 +56,7 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 ### 5. Validation
 
-* **S12_Validation.m**:  
+- **S12_Validation.m**:  
     Performs cross-cohort validation (e.g., comparing JLH and TJU sites). Includes:
   - Consistency checks of W-scores across sites.
   - Spatial correlation analysis (Spin tests) to verify topological similarity of findings.

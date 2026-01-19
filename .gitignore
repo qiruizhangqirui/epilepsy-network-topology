@@ -2,7 +2,9 @@
 # Data & results
 # ========================
 outputs/
+!outputs/README_results.md
 data/
+!data/README_data.md
 
 # ====================
 # Operating System Files
