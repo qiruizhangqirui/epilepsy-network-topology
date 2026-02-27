@@ -488,10 +488,11 @@ for (x_name in names(X_sets)) {
           geom_col(show.legend = FALSE) +
           coord_flip() +
           facet_wrap(~side, scales = "free_y") +
+          scale_fill_manual(values = c("X" = "#FF6666", "Y" = "#6699FF")) +
           labs(title = paste0("Top ", nrow(ld_ci), " Non-zero loadings (Comp ", ci, "): ",
                               x_name, " vs ", y_name),
                x = "Feature", y = "Weight") +
-          theme_minimal(base_size = 10)
+          theme_minimal(base_size = 15)
         ggsave(filename = file.path(out_dir, paste0("loadings_comp", ci, "_", x_name, "_vs_", y_name, ".png")),
                plot = p_ci, width = 8, height = 6, dpi = 150)
       }

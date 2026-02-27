@@ -140,6 +140,8 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Measure.Normativity.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Measure.Normativity.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Measure.Normativity.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Measure.Normativity.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
         end
 
         %% ---- 2) Non-normativity (per atlas) ----
@@ -151,6 +153,8 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Measure.Non_normativity.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Measure.Non_normativity.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Measure.Non_normativity.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Measure.Non_normativity.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
         end
 
         %% ---- 3) Mean_Normativity ----
@@ -162,6 +166,8 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Normativity.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Normativity.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Normativity.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Normativity.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
         end
 
         %% ---- 4) Mean_Non_normativity ----
@@ -173,6 +179,8 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Non_normativity.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Non_normativity.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Non_normativity.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Measure.Mean_Non_normativity.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
         end
 
         % ---- Network_max_match (per template) ----
@@ -194,7 +202,7 @@ for iSite = 1:numel(Sites)
                 end
             end
 
-            Correspondence_Wscore.(sitename).(dataType).Network_max_match = struct();
+            % Correspondence_Wscore.(sitename).(dataType).Network_max_match = struct();
 
             for iTpl = 1:Ntpl
 
@@ -238,6 +246,8 @@ for iSite = 1:numel(Sites)
                 tpl_field = matlab.lang.makeValidName(tpl_names{iTpl});
                 Correspondence_Wscore.(sitename).(dataType).Network_max_match.(tpl_field).W     = W;
                 Correspondence_Wscore.(sitename).(dataType).Network_max_match.(tpl_field).Resid = Resid;
+                Correspondence_Wscore.(sitename).(dataType).Network_max_match.(tpl_field).HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+                Correspondence_Wscore.(sitename).(dataType).Network_max_match.(tpl_field).HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
             end
         end
 
@@ -252,6 +262,8 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_17network.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_17network.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_17network.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_17network.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
 
             if isfield(Measures.(dataType).AS200K17_17network,'NetAbbrev')
                 Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_17network.FeatureNames = ...
@@ -270,12 +282,15 @@ for iSite = 1:numel(Sites)
 
             Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_200ROI.W     = W;
             Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_200ROI.Resid = Resid;
+            Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_200ROI.HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_200ROI.HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
 
             if isfield(Measures.(dataType).AS200K17_200ROI,'TemplateNames')
                 Correspondence_Wscore.(sitename).(dataType).Consensus.AS200K17_200ROI.FeatureNames = ...
                     cellstr(string(Measures.(dataType).AS200K17_200ROI.TemplateNames));
             end
         end
+
 
         %% ---- Meta info ----
         Correspondence_Wscore.(sitename).(dataType).Meta.idx_use    = idx_use;

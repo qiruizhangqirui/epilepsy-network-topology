@@ -325,32 +325,6 @@ for k = 1:numel(Kfolders)
                     fullfile(outdir_perK, sprintf('GMV_Subtype%d_Stage%s_Subcortical.tiff', i, range_types{j})), ...
                     color_range, cmap_name);
 
-                % -------------------------------------------------
-                % Hubness Visualization
-                % -------------------------------------------------
-                HUB = Groups.Hubness.X(Sub_index, :);
-                Mean_HUB = mean(HUB, 1);
-
-                % Cortical Hubness (first 34 regions)
-                Mean_HUB_C = Mean_HUB(1:34);
-                mean_HUB_C_200 = Mean_HUB_C(network_assignment.mapping);
-
-                parcel_to_volume(mean_HUB_C_200, Atlas200, ...
-                    fullfile(outdir_perK, sprintf('Hubness_Subtype%d_Stage%s_Cortical.nii', i, range_types{j})), 1:200);
-
-                pv = parcel_to_surface(mean_HUB_C_200, 'schaefer_200x17_conte69');
-                f = figure('Color', 'w', 'Position', [100 100 960 720]);
-                plot_cortical(pv, 'surface_name', 'conte69', 'color_range', color_range, 'cmap', cmap_name);
-                print(f, '-dtiff', '-r300', fullfile(outdir_perK, sprintf('Hubness_Subtype%d_Stage%s_Cortical.tiff', i, range_types{j})));
-                close(f);
-
-                % Subcortical Hubness (regions 35-48)
-                Mean_HUB_S = Mean_HUB(35:48);
-                parcel_to_volume(Mean_HUB_S, Atlas_Subcortical, ...
-                    fullfile(outdir_perK, sprintf('Hubness_Subtype%d_Stage%s_Subcortical.nii', i, range_types{j})), 1:14);
-                parcel_to_Subsurface(Mean_HUB_S, ...
-                    fullfile(outdir_perK, sprintf('Hubness_Subtype%d_Stage%s_Subcortical.tiff', i, range_types{j})), ...
-                    color_range, cmap_name);
 
                 % -------------------------------------------------
                 % Correspondence Visualization

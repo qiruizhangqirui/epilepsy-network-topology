@@ -392,46 +392,10 @@ else
     warning('Reference group Focal_Epilepsy not found in Means.JLH');
 end
 
-%% =========================
-% Part 7: Hierarchical Clustering (JLH)
-% =========================
-% Groups to cluster
-ClusterGroups = {'TLE','EXE','GGE','SeLECTS','AE'};
-FeatureMat = [];
-Labels = {};
-
-for ig = 1:numel(ClusterGroups)
-    gname = ClusterGroups{ig};
-    if isfield(Means.JLH.Correspondence, gname)
-        % Concatenate Correspondence + Hubness
-        vec_c = Means.JLH.Correspondence.(gname);
-        vec_h = Means.JLH.Hubness.(gname);
-
-        if ~any(isnan(vec_c)) && ~any(isnan(vec_h))
-            FeatureMat(end+1, :) = [vec_c, vec_h];
-            Labels{end+1} = strrep(gname, '_', ' ');
-        end
-    end
-end
 
 if ~isempty(FeatureMat)
-    % Distances
-    dist_mat = pdist(FeatureMat, 'euclidean');
-    tree = linkage(dist_mat, 'ward');
-
-    % Dendrogram
-    f = figure('Color','w','Position',[100 100 600 400]);
-    dendrogram(tree, 'Labels', Labels, 'Orientation','top');
-    title('Hierarchical clustering of epilepsy types (JLH)');
-    ylabel('Euclidean distance (Correspondence + Hubness)');
-    set(gca,'FontSize',12);
-    xtickangle(45);
-
-    saveas(f, fullfile(out_dir, 'Cluster_Dendrogram_JLH.png'));
-    close(f);
-
     %% =========================
-    % Part 8: Feature Correlation Matrix
+    % Part 7: Feature Correlation Matrix
     % =========================
     % Calculate Correlation (Groups x Groups) with Spin Test
     nGroups = length(Labels);

@@ -182,6 +182,7 @@ VIF_X1 = 1 / (1 - R2);
 % 1. Get Data
 Z_corr = table2array(Groups.correspondence.data)*-1;
 Z_names = strrep(Groups.correspondence.names, 'Correspondence_', '');
+Z_names = erase(Z_names, "_")
 
 % 2. Thresholding
 Z_discrete = zeros(size(Z_corr));
@@ -280,6 +281,8 @@ Y_keep = Y_keep(idx_keep_list,:)
 
 [r,p] = corr(score(:,1), Y_keep, 'Type','Spearman', 'Rows','complete')
 
+
+Correspondence_subtype_keep = Correspondence_subtype(idx_keep_list)
 
 %% =========================
 % Part 6: Clinical Association

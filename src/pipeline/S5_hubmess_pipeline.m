@@ -169,17 +169,45 @@ for iSite = 1:numel(siteNames)
     groupTableBySite.(sitename) = array2table(M, 'VariableNames', columns);
 end
 
+% Load 34-network assignment first
+network_assignment = [];
+if exist(assign34_mat,'file') == 2
+    Smap = load(assign34_mat);
+    if isfield(Smap,'network_assignment'); network_assignment = Smap.network_assignment; end
+end
+
 dataTypes = {'RawAtoms','DenoisedAtoms'};
 ROI_defs = struct();
 ROI_defs.AS200K17_200ROI = 1:200;
-ROI_defs.AS200K34        = 1:34;
-ROI_defs.Subcortical     = 1:14;
+
+if ~isempty(network_assignment)
+    ROI_defs.AS200K34 = network_assignment.network_order_name;
+else
+    ROI_defs.AS200K34 = 1:34; % Fallback
+end
+
+ROI_defs.Subcortical = { ...
+    'Left_Accumbens'; ...
+    'Left_Amygdala'; ...
+    'Left_Caudate'; ...
+    'Left_Hippocampus'; ...
+    'Left_Pallidum'; ...
+    'Left_Putamen'; ...
+    'Left_Thalamus'; ...
+    'Right_Accumbens'; ...
+    'Right_Amygdala'; ...
+    'Right_Caudate'; ...
+    'Right_Hippocampus'; ...
+    'Right_Pallidum'; ...
+    'Right_Putamen'; ...
+    'Right_Thalamus'};
+
 roi_types = fieldnames(ROI_defs);
 
 %% =========================================================
-% PART 1: ROI extraction
+% PART 5: ROI extraction
 % =========================================================
-fprintf('\n=== PART 1: ROI extraction (hubness maps) ===\n');
+fprintf('\n=== PART 5: ROI extraction (hubness maps) ===\n');
 
 MeasuresHubness = struct();
 for iType = 1:numel(dataTypes)
@@ -229,11 +257,11 @@ save(pathOutMeasures, 'MeasuresHubness', 'AtomN', '-v7.3');
 fprintf('Saved ROI extraction: %s\n', pathOutMeasures);
 
 %% =========================================================
-% PART 2: Normative modelling (W-scores)
+% PART 6: Normative modelling (W-scores)
 % =========================================================
-fprintf('\n=== PART 2: Normative modelling (W-scores) ===\n');
+fprintf('\n=== PART 6: Normative modelling (W-scores) ===\n');
 
-WscoreHubness = struct();
+% WscoreHubness = struct();
 
 for iSite = 1:numel(siteNames)
     sitename = siteNames{iSite};
@@ -265,6 +293,10 @@ for iSite = 1:numel(siteNames)
             WscoreHubness.(sitename).(dataType).(roi).W     = W;
             WscoreHubness.(sitename).(dataType).(roi).Resid = Resid;
             WscoreHubness.(sitename).(dataType).(roi).FeatureNames = ROI_defs.(roi)(:);
+
+            % Calculate HP raw stats
+            WscoreHubness.(sitename).(dataType).(roi).HP_mean = mean(Y_site(idx_HP_site, :), 1, 'omitnan');
+            WscoreHubness.(sitename).(dataType).(roi).HP_std  = std(Y_site(idx_HP_site, :), 0, 1, 'omitnan');
         end
     end
 end
@@ -273,14 +305,16 @@ save(pathOutWscore, 'WscoreHubness', '-v7.3');
 fprintf('Saved W-scores: %s\n', pathOutWscore);
 
 %% =========================================================
-% PART 3: Statistics + outputs
+% PART 7: Statistics + outputs
 % =========================================================
-fprintf('\n=== PART 3: Statistics + outputs ===\n');
+fprintf('\n=== PART 7: Statistics + outputs ===\n');
 
 alpha   = 0.05;
 nperm   = 10000;
 z_range = [-0.6 0.6];
+color_range_hp = [1 4];
 cmap_name = 'RdBu_r';
+cmap_name_hp = 'Reds';
 
 network_assignment = [];
 if exist(assign34_mat,'file') == 2
@@ -338,8 +372,8 @@ for iSite = 1:numel(siteNames)
 
                 switch roi
                     case 'AS200K17_200ROI'
-                        parcel_to_volume(mu,      AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW.nii']),      ROI_defs.AS200K17_200ROI);
-                        parcel_to_volume(mu_tmax, AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_Tmax.nii']), ROI_defs.AS200K17_200ROI);
+                        parcel_to_volume(mu,      AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW.nii']),      [1:size(ROI_defs.AS200K17_200ROI,2)]);
+                        parcel_to_volume(mu_tmax, AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_Tmax.nii']), [1:size(ROI_defs.AS200K17_200ROI,2)]);
 
                         % Surface
                         pv = parcel_to_surface(mu, 'schaefer_200x17_conte69');
@@ -355,8 +389,8 @@ for iSite = 1:numel(siteNames)
                         close(f);
 
                     case 'Subcortical'
-                        parcel_to_volume(mu,      AtlasNii.Subcortical, fullfile(out_dir_roi, [suffix '_meanW.nii']),      ROI_defs.Subcortical);
-                        parcel_to_volume(mu_tmax, AtlasNii.Subcortical, fullfile(out_dir_roi, [suffix '_meanW_Tmax.nii']), ROI_defs.Subcortical);
+                        parcel_to_volume(mu,      AtlasNii.Subcortical, fullfile(out_dir_roi, [suffix '_meanW.nii']),      [1:size(ROI_defs.Subcortical,1)]);
+                        parcel_to_volume(mu_tmax, AtlasNii.Subcortical, fullfile(out_dir_roi, [suffix '_meanW_Tmax.nii']), [1:size(ROI_defs.Subcortical,1)]);
 
                         parcel_to_Subsurface(mu,      fullfile(out_dir_roi, [suffix '_meanW.tiff']),      z_range, cmap_name);
                         parcel_to_Subsurface(mu_tmax, fullfile(out_dir_roi, [suffix '_meanW_Tmax.tiff']), z_range, cmap_name);
@@ -367,8 +401,8 @@ for iSite = 1:numel(siteNames)
                             mu200      = mu(map);
                             mu200_tmax = mu_tmax(map);
 
-                            parcel_to_volume(mu200,      AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_on200.nii']), ROI_defs.AS200K17_200ROI);
-                            parcel_to_volume(mu200_tmax, AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_Tmax_on200.nii']), ROI_defs.AS200K17_200ROI);
+                            parcel_to_volume(mu200,      AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_on200.nii']), [1:size(ROI_defs.AS200K17_200ROI,2)]);
+                            parcel_to_volume(mu200_tmax, AtlasNii.AS200K17_200ROI, fullfile(out_dir_roi, [suffix '_meanW_Tmax_on200.nii']), [1:size(ROI_defs.AS200K17_200ROI,2)]);
 
                             pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
                             f = figure('Color','w','Position',[100 100 960 720]);
@@ -383,6 +417,69 @@ for iSite = 1:numel(siteNames)
                             close(f);
                         end
                 end
+
+                % --- HP raw mean plot ---
+                if isfield(WscoreHubness.(sitename).(dataType).(roi), 'HP_mean')
+                    mu_hp = WscoreHubness.(sitename).(dataType).(roi).HP_mean;
+                    suffix_hp = sprintf('%s_%s_%s_HP', sitename, dataType, roi);
+
+                    switch roi
+                        case 'AS200K17_200ROI'
+                            pv = parcel_to_surface(mu_hp, 'schaefer_200x17_conte69');
+                            f = figure('Color','w','Position',[100 100 960 720]);
+                            plot_cortical(pv, 'surface_name','conte69', 'color_range', color_range_hp, 'cmap', cmap_name_hp);
+                            print(f, '-dtiff', '-r300', fullfile(out_dir_roi, [suffix_hp '_meanW_conte69.tiff']));
+                            close(f);
+
+                        case 'Subcortical'
+                            parcel_to_Subsurface(mu_hp, fullfile(out_dir_roi, [suffix_hp '_meanW.tiff']), color_range_hp, cmap_name_hp);
+
+                        case 'AS200K34'
+                            if ~isempty(network_assignment)
+                                map = network_assignment.mapping;
+                                mu200_hp = mu_hp(map);
+                                pv = parcel_to_surface(mu200_hp, 'schaefer_200x17_conte69');
+                                f = figure('Color','w','Position',[100 100 960 720]);
+                                plot_cortical(pv, 'surface_name','conte69', 'color_range', color_range_hp, 'cmap', cmap_name_hp);
+                                print(f, '-dtiff', '-r300', fullfile(out_dir_roi, [suffix_hp '_meanW_on200_conte69.tiff']));
+                                close(f);
+                            end
+                    end
+                end
+            end
+
+            % --- Group Boxplots for specific ROIs ---
+            if ismember(roi, {'AS200K34', 'Subcortical'})
+                out_dir_box = fullfile(out_dir_roi, 'Group_Boxplots');
+                if ~exist(out_dir_box, 'dir'); mkdir(out_dir_box); end
+
+                fprintf('    Generating boxplots for %s...\n', roi);
+
+                for iR = 1:size(W, 2)
+                    w_vec = W(:, iR);
+                    % Use FeatureNames if available, otherwise generic
+                    if isfield(WscoreHubness.(sitename).(dataType).(roi), 'FeatureNames')
+                        fNames = WscoreHubness.(sitename).(dataType).(roi).FeatureNames;
+                        if iR <= numel(fNames)
+                            featName = char(fNames{iR}); % Ensure char
+                        else
+                            featName = sprintf('ROI%03d', iR);
+                        end
+                    else
+                        featName = sprintf('ROI%03d', iR);
+                    end
+
+                    % Sanitize filename
+                    featNameSafe = matlab.lang.makeValidName(featName);
+
+                    out_name = fullfile(out_dir_box, sprintf('%s_%s_%s_%s_box.tiff', sitename, dataType, roi, featNameSafe));
+                    label_str = sprintf('%s | %s | %s | %s', sitename, dataType, roi, featName);
+
+                    % Reuse plotting function from S4 (plot_group_wscore)
+                    % Function signature: [w_median, p_val, labs, w_std] = plot_group_wscore(data, groupTable, title_str, out_path)
+                    plot_group_wscore(w_vec, groupTable, label_str, out_name);
+                    close all;
+                end
             end
         end
     end
@@ -391,3 +488,237 @@ end
 save(pathOutStats, 'StatsHubness', '-v7.3');
 fprintf('\nDONE.\n  Raw ROI: %s\n  Wscore:   %s\n  Stats:    %s\n  Figures:  %s\n', ...
     pathOutMeasures, pathOutWscore, pathOutStats, out_dir);
+
+
+%% =========================================================
+% PART 9: Correspondence Analysis (TJU RawAtoms only)
+% =========================================================
+fprintf('\n=== PART 9: Correspondence Analysis (TJU RawAtoms) ===\n');
+
+% Only run if TJU RawAtoms
+if strcmp(sitename, 'TJU') && strcmp(dataType, 'RawAtoms')
+
+    out_dir_corr = fullfile(out_dir, 'Correspondence_Analysis');
+    if ~exist(out_dir_corr, 'dir'); mkdir(out_dir_corr); end
+
+    csv_file = fullfile(project_root, 'outputs', 'PySuStaln', 'Correspondence', 'K02', 'assignment_K2.csv');
+
+    if exist(csv_file, 'file')
+        T_K2 = readtable(csv_file);
+
+        % We need to match subjects in 'pat_indices' (TJU non-HP) with T_K2.SubID
+        % Note: pat_indices uses the global 'subjectTable' order
+
+        % Initialize vectors for analysis
+        % Subtype: 0 or 1. Stage: 0-N
+        SubtypeVec = nan(Npat, 1);
+        StageVec   = nan(Npat, 1);
+
+        valid_sub_mask = false(Npat, 1);
+
+        for p = 1:Npat
+            % Global index
+            g_idx = pat_indices(p);
+            subID = subjectIDs{g_idx};
+
+            % Find in K2 table
+            row_k2 = strcmp(T_K2.SubID, subID);
+            if any(row_k2)
+                SubtypeVec(p) = T_K2.ml_subtype(row_k2);
+                StageVec(p)   = T_K2.ml_stage(row_k2);
+                valid_sub_mask(p) = true;
+            end
+        end
+
+        fprintf('  Matched %d subjects from assignment_K2.csv\n', sum(valid_sub_mask));
+
+        % --- Analysis Loop ---
+        corr_rois = {'AS200K17_200ROI','AS200K34', 'Subcortical'};
+        corr_rois = {'AS200K34'};
+        for r = 1:numel(corr_rois)
+            roi = corr_rois{r};
+            if ~isfield(WscoreHubness.(sitename).(dataType), roi); continue; end
+
+            % Extract W for patients using the site-specific index
+            W_pat = WscoreHubness.(sitename).(dataType).(roi).W(idx_pat_in_W, :);
+
+            % 1. Correspondence Stage Correlation
+            valid = valid_sub_mask & ~isnan(StageVec) & ~all(isnan(W_pat),2);
+            if sum(valid) > 5
+                [r_corr, p_corr] = permucorr(W_pat(valid,:), StageVec(valid), ...
+                    'nperm', nperm, 'alpha', alpha, 'tail', 'both', 'type','spearman','correct', true);
+
+                suffix = sprintf('%s_%s_%s_Corr_Stage', sitename, dataType, roi);
+
+                % Inline Plotting
+                stat_val = r_corr; p_val = p_corr; z_lim = z_range_r;
+                stat_sig = stat_val; stat_sig(p_val >= alpha) = 0;
+
+                if strcmp(roi, 'Subcortical')
+                    parcel_to_Subsurface(stat_val, fullfile(out_dir_corr, [suffix '_raw.tiff']), z_lim, 'RdBu_r');
+                    parcel_to_Subsurface(stat_sig, fullfile(out_dir_corr, [suffix '_sig.tiff']), z_lim, 'RdBu_r');
+                elseif strcmp(roi, 'AS200K17_200ROI')
+                    % Direct mapping for 200 ROI
+                    mu200 = stat_val;
+                    pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                    f = figure('Color','w','Position',[100 100 960 720]);
+                    plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                    print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                    close(f);
+                    
+                    mu200_sig = stat_sig;
+                    pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                    f = figure('Color','w','Position',[100 100 960 720]);
+                    plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                    print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                    close(f);
+
+                elseif strcmp(roi, 'AS200K34') && ~isempty(network_assignment)
+                    map = network_assignment.mapping;
+
+                    mu200 = stat_val(map);
+                    pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                    f = figure('Color','w','Position',[100 100 960 720]);
+                    plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                    print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                    close(f);
+
+                    mu200_sig = stat_sig(map);
+                    pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                    f = figure('Color','w','Position',[100 100 960 720]);
+                    plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                    print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                    close(f);
+                    
+                    % BAR PLOTS (S11 Order, Compound L/R)
+                    local_plot_bar(stat_val(1:17),  p_val(1:17), ...
+                                       stat_val(18:34), p_val(18:34), ...
+                                       [suffix '_bar_L_R'], out_dir_corr);
+                end
+            end
+
+            % 2. Correspondence Subtype T-test
+            % Exclude Stage 0
+            valid_subtype = valid_sub_mask & ~isnan(SubtypeVec) & (StageVec ~= 0) & ~all(isnan(W_pat),2);
+
+            % Assuming Subtype is 0 and 1
+            if sum(valid_subtype) > 5
+                g1 = W_pat(valid_subtype & SubtypeVec == 0, :); % Subtype 0
+                g2 = W_pat(valid_subtype & SubtypeVec == 1, :); % Subtype 1
+
+                if size(g1,1) > 2 && size(g2,1) > 2
+                    [t_val, p_val] = permuttest2(g1, g2, ...
+                        'nperm', nperm, 'alpha', alpha, 'tail', 'both', 'correct', true);
+
+                    suffix = sprintf('%s_%s_%s_Ttest_Subtype0vs1', sitename, dataType, roi);
+
+                    % Inline Plotting
+                    stat_val = t_val; p_val = p_val; z_lim = z_range_t;
+                    stat_sig = stat_val; stat_sig(p_val >= alpha) = 0;
+
+                    if strcmp(roi, 'Subcortical')
+                        parcel_to_Subsurface(stat_val, fullfile(out_dir_corr, [suffix '_raw.tiff']), z_lim, 'RdBu_r');
+                        parcel_to_Subsurface(stat_sig, fullfile(out_dir_corr, [suffix '_sig.tiff']), z_lim, 'RdBu_r');
+                    elseif strcmp(roi, 'AS200K17_200ROI')
+                        % Direct mapping for 200 ROI
+                        mu200 = stat_val;
+                        pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                        f = figure('Color','w','Position',[100 100 960 720]);
+                        plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                        print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                        close(f);
+                        
+                        mu200_sig = stat_sig;
+                        pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                        f = figure('Color','w','Position',[100 100 960 720]);
+                        plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                        print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                        close(f);
+
+                    elseif strcmp(roi, 'AS200K34') && ~isempty(network_assignment)
+                        map = network_assignment.mapping;
+
+                        mu200 = stat_val(map);
+                        pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                        f = figure('Color','w','Position',[100 100 960 720]);
+                        plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                        print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                        close(f);
+
+                        mu200_sig = stat_sig(map);
+                        pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                        f = figure('Color','w','Position',[100 100 960 720]);
+                        plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                        print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                        close(f);
+                        
+                        % BAR PLOTS (S11 Order, Compound L/R)
+                        local_plot_bar(stat_val(1:17),  p_val(1:17), ...
+                                           stat_val(18:34), p_val(18:34), ...
+                                           [suffix '_bar_L_R'], out_dir_corr);
+                    end
+            end
+        end
+        end
+
+        % 3. Correspondence Stage Correlation (Subtype 0 only)
+        valid_s0 = valid_sub_mask & (SubtypeVec == 0) & ~isnan(StageVec) & ~all(isnan(W_pat),2);
+        if sum(valid_s0) > 5
+            [r_corr, p_corr] = permucorr(W_pat(valid_s0,:), StageVec(valid_s0), ...
+                'nperm', nperm, 'alpha', alpha, 'tail', 'both', 'type', 'spearman', 'correct', true);
+
+            suffix = sprintf('%s_%s_%s_Corr_Stage_Subtype0', sitename, dataType, roi);
+
+            % Inline Plotting
+            stat_val = r_corr; p_val = p_corr; z_lim = z_range_r;
+            stat_sig = stat_val; stat_sig(p_val >= alpha) = 0;
+
+            if strcmp(roi, 'Subcortical')
+                parcel_to_Subsurface(stat_val, fullfile(out_dir_corr, [suffix '_raw.tiff']), z_lim, 'RdBu_r');
+                parcel_to_Subsurface(stat_sig, fullfile(out_dir_corr, [suffix '_sig.tiff']), z_lim, 'RdBu_r');
+            elseif strcmp(roi, 'AS200K17_200ROI')
+                % Direct mapping for 200 ROI
+                mu200 = stat_val;
+                pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                f = figure('Color','w','Position',[100 100 960 720]);
+                plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                close(f);
+                
+                mu200_sig = stat_sig;
+                pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                f = figure('Color','w','Position',[100 100 960 720]);
+                plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                close(f);
+
+            elseif strcmp(roi, 'AS200K34') && ~isempty(network_assignment)
+                map = network_assignment.mapping;
+
+                mu200 = stat_val(map);
+                pv = parcel_to_surface(mu200, 'schaefer_200x17_conte69');
+                f = figure('Color','w','Position',[100 100 960 720]);
+                plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_raw_conte69.tiff']));
+                close(f);
+
+                mu200_sig = stat_sig(map);
+                pv = parcel_to_surface(mu200_sig, 'schaefer_200x17_conte69');
+                f = figure('Color','w','Position',[100 100 960 720]);
+                plot_cortical(pv, 'surface_name','conte69', 'color_range', z_lim, 'cmap', 'RdBu_r');
+                print(f, '-dtiff', '-r300', fullfile(out_dir_corr, [suffix '_sig_conte69.tiff']));
+                close(f);
+                
+                % BAR PLOTS (S11 Order, Compound L/R)
+                local_plot_bar(stat_val(1:17),  p_val(1:17), ...
+                                   stat_val(18:34), p_val(18:34), ...
+                                   [suffix '_bar_L_R'], out_dir_corr);
+            end
+        end
+    end
+else
+    warning('assignment_K2.csv not found: %s', csv_file);
+end
+
+
+

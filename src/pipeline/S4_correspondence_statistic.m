@@ -179,6 +179,8 @@ alpha_fdr   = 0.05;
 alpha_maxT  = 0.05;
 nperm       = 10000;
 color_range = [-0.6 0.6];
+color_range_hp =  [0.3 0.6];
+cmap_name_hp =  'Reds';
 cmap_name   = 'RdBu_r';
 
 % Initialize Stats Storage
@@ -546,33 +548,41 @@ for iSite = 1:numel(siteNames)
             Correspondence_stats.(sitename).(dataType).CNR.(tpl_field).w_std = w_std;
             close all;
 
-            % Subcortical surface plot
-%             if strcmpi(tpl_field, 'Subcortical')
-%                 out_dir_sub = fullfile(out_dir_cnr, 'Subcortical_Surface');
-%                 if ~exist(out_dir_sub, 'dir'); mkdir(out_dir_sub); end
-% 
-%                 group_list = GT_plot.Properties.VariableNames;
-%                 if size(DataNet,2) > numel(NetLabels); DataNet_use = DataNet(:, 1:numel(NetLabels));
-%                 else; DataNet_use = DataNet; end
-% 
-%                 for gg = 1:numel(group_list)
-%                     gname = group_list{gg};
-%                     idx_g = GT_plot.(gname) > 0;
-%                     if sum(idx_g) < 3; continue; end
-% 
-%                     mu = mean(DataNet_use(idx_g, :), 1, 'omitnan');
-% 
-%                     out_mu = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
-%                     parcel_to_Subsurface([mu,mu], out_mu, color_range, cmap_name);
-% 
-%                     pmaxT = pmaxT_matrix(gg, 1:numel(NetLabels));
-%                     h_maxT = pmaxT < alpha_maxT;
-%                     mu_maxT = mu; mu_maxT(~h_maxT) = 0;
-% 
-%                     out_mu_maxT = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW_Tmax.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
-%                     parcel_to_Subsurface([mu_maxT,mu_maxT], out_mu_maxT, color_range, cmap_name);
-%                 end
-%             end
+           % Subcortical surface plot
+            if strcmpi(tpl_field, 'Subcortical')
+                out_dir_sub = fullfile(out_dir_cnr, 'Subcortical_Surface');
+                if ~exist(out_dir_sub, 'dir'); mkdir(out_dir_sub); end
+
+                group_list = GT_plot.Properties.VariableNames;
+                if size(DataNet,2) > numel(NetLabels); DataNet_use = DataNet(:, 1:numel(NetLabels));
+                else; DataNet_use = DataNet; end
+
+                for gg = 1:numel(group_list)
+                    gname = group_list{gg};
+                    idx_g = GT_plot.(gname) > 0;
+                    if sum(idx_g) < 3; continue; end
+
+                    mu = mean(DataNet_use(idx_g, :), 1, 'omitnan');
+
+                    out_mu = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
+                    parcel_to_Subsurface([mu,mu], out_mu, color_range, cmap_name);
+
+                    pmaxT = pmaxT_matrix(gg, 1:numel(NetLabels));
+                    h_maxT = pmaxT < alpha_maxT;
+                    mu_maxT = mu; mu_maxT(~h_maxT) = 0;
+
+                    out_mu_maxT = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_%s_meanW_Tmax.tiff', sitename, dataType, tpl_field, strrep(gname,' ','_')));
+                    parcel_to_Subsurface([mu_maxT,mu_maxT], out_mu_maxT, color_range, cmap_name);
+                end
+
+                % --- HP raw mean plot ---
+                if isfield(CNR.(tpl_field), 'HP_mean')
+                    mu_hp = CNR.(tpl_field).HP_mean;
+                    if size(mu_hp,2) > numel(NetLabels); mu_hp = mu_hp(1:numel(NetLabels)); end
+                    out_hp = fullfile(out_dir_sub, sprintf('%s_%s_CNR_%s_HP_meanW.tiff', sitename, dataType, tpl_field));
+                    parcel_to_Subsurface([mu_hp, mu_hp], out_hp, color_range_hp, cmap_name_hp);
+                end
+            end
             close all;
         end
     end
@@ -598,6 +608,17 @@ for iSite = 1:numel(siteNames)
         end
 
         W200 = wscores.(sitename).(dataType).Consensus.AS200K17_200ROI.W;
+
+        % --- HP raw mean plot ---
+        if isfield(wscores.(sitename).(dataType).Consensus.AS200K17_200ROI, 'HP_mean')
+            mu_hp = wscores.(sitename).(dataType).Consensus.AS200K17_200ROI.HP_mean;
+            pv_hp = parcel_to_surface(mu_hp, 'schaefer_200x17_conte69');
+            f_hp = figure('Color','w','Position',[100 100 960 720]);
+            plot_cortical(pv_hp, 'surface_name','conte69', 'color_range', color_range_hp, 'cmap', cmap_name_hp);
+            out_hp = fullfile(out_dir, sprintf('%s_%s_S200_HP_mean.tiff', sitename, dataType));
+            print(f_hp, '-dtiff', '-r300', out_hp);
+            close(f_hp);
+        end
 
         for kk = 1:numel(Group_names)
             gname = Group_names{kk};
@@ -657,3 +678,45 @@ end
 Correspondence_stats.AS200K17_200ROI = StatOut;
 save(fullfile(result_dir, 'Correspondence_stats.mat'), 'Correspondence_stats', '-v7.3');
 fprintf('\nDONE. Outputs saved to:\n  %s\n', out_dir);
+
+%% =========================================================
+% PART 5: Standalone Binary Threshold Maps (TJU RawAtoms 200ROI)
+% =========================================================
+fprintf('\n=== PART 5: Binary Threshold Maps (TJU RawAtoms) ===\n');
+
+st = 'TJU';
+dt = 'RawAtoms';
+
+if isfield(wscores.(st).(dt).Consensus, 'AS200K17_200ROI')
+    W200 = wscores.(st).(dt).Consensus.AS200K17_200ROI.W;
+    
+    % 1) Focal Epilepsy group W < -0.7 (Blue)
+    groupTable = groupTableBySite.(st);
+    if any(strcmp(groupTable.Properties.VariableNames, 'Focal Epilepsy'))
+        idx_focal = logical(groupTable.("Focal Epilepsy"));
+        if sum(idx_focal) >= 3
+            mu_focal = median(W200(idx_focal, :), 1, 'omitnan');
+            mask_w = double(mu_focal < -0.5);
+            
+            pv = parcel_to_surface(mask_w, 'schaefer_200x17_conte69');
+            f = figure('Color','w','Position',[100 100 960 720]);
+            plot_cortical(pv, 'surface_name','conte69', 'color_range', [0 1], 'cmap', 'Blues');
+            out_file = fullfile(out_dir, sprintf('%s_%s_FocalEpi_Wlt-05_mask.tiff', st, dt));
+            print(f, '-dtiff', '-r300', out_file);
+%             close(f);
+        end
+    end
+
+    % 2) HP group mean > 0.53 (Red)
+    if isfield(wscores.(st).(dt).Consensus.AS200K17_200ROI, 'HP_mean')
+        mu_hp = wscores.(st).(dt).Consensus.AS200K17_200ROI.HP_mean;
+        mask_hp = double(mu_hp > 0.50);
+        
+        pv = parcel_to_surface(mask_hp, 'schaefer_200x17_conte69');
+        f = figure('Color','w','Position',[100 100 960 720]);
+        plot_cortical(pv, 'surface_name','conte69', 'color_range', [0 1], 'cmap', 'Reds');
+        out_file = fullfile(out_dir, sprintf('%s_%s_HPmean_gt05_mask.tiff', st, dt));
+        print(f, '-dtiff', '-r300', out_file);
+%         close(f);
+    end
+end
