@@ -65,7 +65,6 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
   - `PCNtoolkit` (MATLAB wrapper)
   - `ENIGMA Toolbox` (for Spin tests/Surface plotting)
   - `PERMUTOOLS` (for max-T permutation inference)
-  - `BrainNet Viewer` or `SurfStat` (for visualization)
 
 ### Python
 
@@ -75,7 +74,6 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 ### R
 
 - `PMA` (Penalized Multivariate Analysis for sCCA)
-- `ggplot2` (for visualization)
 
 ## Usage
 
