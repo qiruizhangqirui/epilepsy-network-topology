@@ -75,9 +75,17 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 - `PMA` (Penalized Multivariate Analysis for sCCA)
 
+## Data Availability
+
+The computation data and pre-calculated results can be downloaded from:
+
+> **Zhang, Q., Arielle, D., Sharifzadeh Javidi, S., Ankeeta, A., Sperling, M., Zhang, Z., & Tracy, J. (2026). Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates [Data set]. Zenodo. <https://doi.org/10.5281/zenodo.18808544>**
+
+Please download the dataset and extract it into the root directory of this repository. Note that the Zenodo repository also contains all pre-computed results.
+
 ## Usage
 
-1. **Setup**: Ensure all data is organized in the root directory as specified in `data/README_data.md` and initial outputs are structured via `S1`.
+1. **Setup**: Ensure all data is organized in the root directory and initial outputs are structured via `S1`.
 2. **Run Sequentially**: Execute scripts `S1` through `S12` in order.
     - MATLAB scripts should be run from the `src/pipeline` directory.
     - Python/R scripts are executed for specific multivariate and progression modeling (S8, S9).
