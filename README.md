@@ -61,18 +61,17 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 - **Statistics and Machine Learning Toolbox**
 - **Bioinformatics Toolbox**
-- **External Toolboxes** (included in `src/utils` or required externally):
-  - `PCNtoolkit` (MATLAB wrapper)
-  - `ENIGMA Toolbox` (for Spin tests/Surface plotting)
-  - `PERMUTOOLS` (for max-T permutation inference)
+- **External Toolboxes** :
+  - `ENIGMA Toolbox` (<https://enigma-toolbox.readthedocs.io/> for Surface plotting)
+  - `PERMUTOOLS` (<https://github.com/mickcrosse/PERMUTOOLS> for max-T permutation)
 
 ### Python
 >
-> **Note:** When running [PCNtoolkit](https://github.com/amarquand/PCNtoolkit) and [pySuStaIn](https://github.com/ucl-pond/pySuStaIn), please configure the Python environment properly and add the corresponding conda Python interpreter to the MATLAB environment.
+> **Note:** When running PCNtoolkit(<https://github.com/amarquand/PCNtoolkit>) and pySuStaIn (<https://github.com/ucl-pond/pySuStaIn>), please configure the Python environment properly and add the corresponding conda Python interpreter to the MATLAB environment.
 
 ### R
 
-- `PMA` (Penalized Multivariate Analysis for sCCA)
+- `PMA` (<https://github.com/cran/PMA> Penalized Multivariate Analysis for sCCA)
 
 ## Data Availability
 
