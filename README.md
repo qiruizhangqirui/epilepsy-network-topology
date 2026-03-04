@@ -1,6 +1,6 @@
 # Epilepsy Network Topology Analysis
 
-This repository contains the complete analysis pipeline for the study on functional-structural network correspondence and multi-network integration (k-hubness) in epilepsy. The project leverages individualized resting-state functional MRI (rs-fMRI) networks to explore complementary, dual-axis network topology alterations across the spectrum of focal epilepsy and other common epilepsy syndromes, using Normative Modeling and Subtype and Stage Inference (SuStaIn).
+This repository contains the complete analysis pipeline for the study: **Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates**. The project leverages individualized resting-state functional MRI (rs-fMRI) networks to explore complementary, dual-axis network topology alterations across the spectrum of focal epilepsy and other common epilepsy syndromes, using Normative Modeling and Subtype and Stage Inference (SuStaIn).
 
 ## Background
 
@@ -67,9 +67,8 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
   - `PERMUTOOLS` (for max-T permutation inference)
 
 ### Python
-
-- `numpy`, `pandas`, `scipy`
-- `pySuStaIn` (for S9)
+>
+> **Note:** When running [PCNtoolkit](https://github.com/amarquand/PCNtoolkit) and [pySuStaIn](https://github.com/ucl-pond/pySuStaIn), please configure the Python environment properly and add the corresponding conda Python interpreter to the MATLAB environment.
 
 ### R
 
