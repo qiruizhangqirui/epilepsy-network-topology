@@ -92,4 +92,4 @@ Please download the dataset and extract it into the root directory of this repos
 ## Citation
 
 If you use this code or pipeline, please cite:
-> **Zhang Q., Dascal A., et al., "Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates", 2026**
+> **Zhang Q, Dascal A, Javidi SS, Ankeeta A, Sperling MR, Zhang Z, Tracy JI. Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates. bioRxiv. 2026:2026.03.17.712432. doi: 10.64898/2026.03.17.712432**
