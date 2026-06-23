@@ -501,6 +501,12 @@ if strcmp(sitename, 'TJU') && strcmp(dataType, 'RawAtoms')
     out_dir_corr = fullfile(out_dir, 'Correspondence_Analysis');
     if ~exist(out_dir_corr, 'dir'); mkdir(out_dir_corr); end
 
+    % Ensure required variables are defined (e.g. if running this section standalone)
+    if ~exist('alpha', 'var'); alpha = 0.05; end
+    if ~exist('nperm', 'var'); nperm = 10000; end
+    if ~exist('z_range_r', 'var'); z_range_r = [-0.5 0.5]; end
+    if ~exist('z_range_t', 'var'); z_range_t = [-5 5]; end
+
     csv_file = fullfile(project_root, 'outputs', 'PySuStaln', 'Correspondence', 'K02', 'assignment_K2.csv');
 
     if exist(csv_file, 'file')
@@ -508,6 +514,12 @@ if strcmp(sitename, 'TJU') && strcmp(dataType, 'RawAtoms')
 
         % We need to match subjects in 'pat_indices' (TJU non-HP) with T_K2.SubID
         % Note: pat_indices uses the global 'subjectTable' order
+        idx_site = strcmp(site, 'TJU');
+        idx_hp = strcmp(group_raw, 'HP');
+        idx_pat = idx_site & ~idx_hp;
+        pat_indices = find(idx_pat);
+        Npat = numel(pat_indices);
+        idx_pat_in_W = ~strcmp(group_raw(idx_site), 'HP');
 
         % Initialize vectors for analysis
         % Subtype: 0 or 1. Stage: 0-N

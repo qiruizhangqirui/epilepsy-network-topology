@@ -256,6 +256,46 @@ for i = 1:numel(subtypes)
     local_stacked_bar(Group_categorical, X_flat, st_name, ...
         out_path, codes_corr, labels_corr, st_colors, 1200, 60);
 
+    % Save network values to CSV
+    try
+        M_sub = zeros(numel(Z_names), numel(codes_corr));
+        for r_idx = 1:numel(Z_names)
+            xi = Z_sub(:, r_idx);
+            for c_idx = 1:numel(codes_corr)
+                M_sub(r_idx, c_idx) = sum(xi == codes_corr(c_idx));
+            end
+        end
+        P_sub = M_sub ./ max(sum(M_sub, 2), 1) * 100;
+        
+        numRows = numel(Z_names);
+        numCols = 1 + 2 * numel(codes_corr) + 1;
+        colNames = cell(1, numCols);
+        colNames{1} = 'Network';
+        for c_idx = 1:numel(codes_corr)
+            labelStr = char(labels_corr{c_idx});
+            colNames{2*c_idx} = ['Count_', labelStr];
+            colNames{2*c_idx+1} = ['Percent_', labelStr];
+        end
+        colNames{end} = 'Total_Count';
+        
+        dataCell = cell(numRows, numCols);
+        for r_idx = 1:numRows
+            dataCell{r_idx, 1} = char(Z_names(r_idx));
+            rowTotal = sum(M_sub(r_idx, :));
+            for c_idx = 1:numel(codes_corr)
+                dataCell{r_idx, 2*c_idx} = M_sub(r_idx, c_idx);
+                dataCell{r_idx, 2*c_idx+1} = P_sub(r_idx, c_idx);
+            end
+            dataCell{r_idx, end} = rowTotal;
+        end
+        
+        csv_path = fullfile(out_dir, sprintf("StackedBar_Correspondence_%s.csv", strrep(st_name, " ", "")));
+        writecell([colNames; dataCell], csv_path);
+        fprintf('  Saved stacked bar table to: %s\n', csv_path);
+    catch ME
+        warning('Failed to export stacked bar table: %s', ME.message);
+    end
+
     fprintf('Generated stacked bar for %s (%d subjects)\n', st_name, nSub_st);
 end
 
@@ -314,7 +354,7 @@ clin = struct();
 clin.EpilepsyType    = double(T.EpilepsyType);      % 1=TLE, 2=EXE
 clin.Lateralization  = double(T.Lateralization);    % 1=Left,2=Right,3=Unclear
 clin.Pathology       = double(T.Pathology);         % 1=UHS,2=BHS,3=Lesion,4=Normal
-clin.FBTCS           = double(T.FBTCS);             % 1=No,2=Yes
+clin.FTBTC           = double(T.FTBTC);             % 1=No,2=Yes
 clin.AgeOnset        = double(T.AgeOnset);
 clin.SeizureDuration = double(T.SeizureDuration);
 
@@ -328,8 +368,8 @@ LabelDict.Lateralization.text  = ["Left","Right","Unclear"];
 LabelDict.Pathology.codes      = [1 2 3 4];
 LabelDict.Pathology.text       = ["UHS","BHS","Lesion","Normal"];
 
-LabelDict.FBTCS.codes          = [1 2];
-LabelDict.FBTCS.text           = ["No","Yes"];
+LabelDict.FTBTC.codes          = [1 2];
+LabelDict.FTBTC.text           = ["No","Yes"];
 
 % =========================
 % Color definitions (RGB)
@@ -354,7 +394,7 @@ ColorDict.Pathology = [
     0.88 0.75 0.93   % Lesion (very light purple)
     0.75 0.75 0.75   % Normal (gray)
     ];
-ColorDict.FBTCS = [
+ColorDict.FTBTC = [
     0.70 0.15 0.20   % No   (deep red)
     0.95 0.55 0.55   % Yes  (light red)
     ];
@@ -362,7 +402,7 @@ ColorDict.FBTCS = [
 %% -------------------------
 % 6.3 Categorical variables: Chi-square + stacked bar
 % -------------------------
-catVars = ["EpilepsyType","Lateralization","Pathology","FBTCS"];
+catVars = ["EpilepsyType","Lateralization","Pathology","FTBTC"];
 
 ResCorr = table();
 ResGMV  = table();

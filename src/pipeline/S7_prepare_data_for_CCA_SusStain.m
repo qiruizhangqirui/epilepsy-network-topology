@@ -128,6 +128,7 @@ for iSite = 1:numel(SitesToProcess)
     OutT.AgeOnset        = double(T.("age of sz onset")); OutputLabels{end+1} = 'AgeOnset';
     OutT.SeizureDuration = double(T.("sz duration")); OutputLabels{end+1} = 'SeizureDuration';
     OutT.T1notUse        = double(T.("T1w_failedQC")); OutputLabels{end+1} = 'T1notUse';
+    OutT.ASM_count       = double(T.ASM_count);       OutputLabels{end+1} = 'ASM_count';
 
     % -- Derived: Epilepsy Type --
     group_clean = string(T.Group);

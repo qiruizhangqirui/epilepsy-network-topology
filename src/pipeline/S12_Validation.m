@@ -316,6 +316,12 @@ for iM = 1:numel(metrics)
             disk_name = sprintf('Scatter_TJUvsJLH_%s_%s.png', metric, gname);
             saveas(f, fullfile(out_dir, disk_name));
             close(f);
+
+            % Save scatter plot raw data to CSV (TJU vs JLH)
+            T_scatter = table(x(:), y(:), 'VariableNames', {['TJU_' metric], ['JLH_' metric]});
+            csv_scatter = sprintf('Scatter_TJUvsJLH_%s_%s.csv', metric, gname);
+            writetable(T_scatter, fullfile(out_dir, csv_scatter));
+            fprintf('  Saved scatter plot raw data to: %s\n', csv_scatter);
         else
             fprintf('Skipping %s %s (Group missing)\n', metric, gname);
         end
@@ -376,22 +382,47 @@ if isfield(Means.(RefSite).Correspondence, RefGroup)
 
     % Labels
     for i = 1:numel(labels)
-        text(r_corr(i)+0.01, abn_corr(i), labels{i}, 'Color',[0 0.45 0.74], 'FontSize', 9);
-        text(r_hub(i)+0.01, abn_hub(i), labels{i}, 'Color',[0.85 0.33 0.1], 'FontSize', 9);
+        text(r_corr(i)+0.02, abn_corr(i), labels{i}, 'Color',[0 0.45 0.74], 'FontSize', 12, 'FontWeight', 'bold', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle');
+        text(r_hub(i), abn_hub(i)-0.012, labels{i}, 'Color',[0.85 0.33 0.1], 'FontSize', 12, 'FontWeight', 'bold', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
     end
 
     xlabel('Correlation with Focal Epilepsy (Spatial Pattern)');
     ylabel('Mean Absolute Difference from Focal Epilepsy (Magnitude)');
     title('Similarity & Abnormality relative to Focal Epilepsy (JLH)');
-    legend({'Correspondence','Hubness'}, 'Location','best');
+    legend({'Correspondence','k-hubness'}, 'Location','best');
     set(gca,'FontSize',11);
 
     saveas(f, fullfile(out_dir, 'Similarity_Abnormality_JLH.png'));
     close(f);
+
+    % Save Similarity & Abnormality data to CSV
+    T_sa = table(labels', r_corr', abn_corr', r_hub', abn_hub', ...
+        'VariableNames', {'Group', 'Correspondence_Similarity', 'Correspondence_Abnormality', 'k_hubness_Similarity', 'k_hubness_Abnormality'});
+    writetable(T_sa, fullfile(out_dir, 'Similarity_Abnormality_JLH.csv'));
+    fprintf('  Saved Similarity & Abnormality data to: Similarity_Abnormality_JLH.csv\n');
 else
     warning('Reference group Focal_Epilepsy not found in Means.JLH');
 end
 
+
+% Groups to correlate
+ClusterGroups = {'TLE_Left','TLE_Right','EXE','GGE','SeLECTS','AE'};
+FeatureMat = [];
+Labels = {};
+
+for ig = 1:numel(ClusterGroups)
+    gname = ClusterGroups{ig};
+    if isfield(Means.JLH.Correspondence, gname)
+        % Concatenate Correspondence + Hubness
+        vec_c = Means.JLH.Correspondence.(gname);
+        vec_h = Means.JLH.Hubness.(gname);
+
+        if ~any(isnan(vec_c)) && ~any(isnan(vec_h))
+            FeatureMat(end+1, :) = [vec_c, vec_h];
+            Labels{end+1} = strrep(gname, '_', ' ');
+        end
+    end
+end
 
 if ~isempty(FeatureMat)
     %% =========================
@@ -500,3 +531,4 @@ if ~isempty(FeatureMat)
 
 
     fprintf('Done. Results saved to %s\n', out_dir);
+end

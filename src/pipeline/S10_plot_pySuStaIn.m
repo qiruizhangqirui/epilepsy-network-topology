@@ -271,9 +271,15 @@ for k = 1:numel(Kfolders)
 end
 
 %% =========================
-% Part 4: Generate Cortical and Subcortical Visualizations
+% Part 4: Generate Cortical and Subcortical Visualizations and Mean Tables
 % =========================
-fprintf('\n=== Generating Surface Visualizations ===\n');
+fprintf('\n=== Generating Surface Visualizations and Mean Tables ===\n');
+
+% Initialize overall tables across all K models
+row_names_GMV = [Groups.GMV.names(1:34); Groups.GMV.names(47:60)];
+row_names_Corr = [Groups.Correspondence.names(1:17); Groups.Correspondence.names(18:24)];
+T_GMV_all = table(row_names_GMV, 'VariableNames', {'Region'});
+T_Corr_all = table(row_names_Corr, 'VariableNames', {'Region'});
 
 % Visualization parameters
 color_range = [-1, 0];
@@ -282,6 +288,10 @@ cmap_name   = 'Blues_r';
 for k = 1:numel(Kfolders)
     Data = All_K_Data.([Kfolders{k}, '_Stage_range']);
     outdir_perK = fullfile(out_dir, Kfolders{k});
+
+    % Initialize tables for this K
+    T_GMV = table(row_names_GMV, 'VariableNames', {'Region'});
+    T_Corr = table(row_names_Corr, 'VariableNames', {'Region'});
 
     fprintf('  Processing %s...\n', Kfolders{k});
 
@@ -356,11 +366,35 @@ for k = 1:numel(Kfolders)
                     fullfile(outdir_perK, sprintf('Correspondence_Subtype%d_Stage%s_Subcortical.tiff', i, range_types{j})), ...
                     color_range, cmap_name);
 
+                % -------------------------------------------------
+                % Table Data Collection
+                % -------------------------------------------------
+                col_name_local = matlab.lang.makeValidName(sprintf('Subtype%d_Stage%s', i, range_types{j}));
+                col_name_all   = matlab.lang.makeValidName(sprintf('%s_Subtype%d_Stage%s', Kfolders{k}, i, range_types{j}));
+
+                mean_gmv_col = [Mean_GMV(1:34)'; Mean_GMV(47:60)'];
+                T_GMV.(col_name_local) = mean_gmv_col;
+                T_GMV_all.(col_name_all) = mean_gmv_col;
+
+                mean_corr_col = [Mean_Correspondence(1:17)'; Mean_Correspondence(18:24)'];
+                T_Corr.(col_name_local) = mean_corr_col;
+                T_Corr_all.(col_name_all) = mean_corr_col;
+
             catch ME
                 warning('Failed to process Subtype %d, Stage %s: %s', i, range_types{j}, ME.message);
             end
         end
     end
+
+    % Save local tables for this K
+    writetable(T_GMV, fullfile(outdir_perK, sprintf('Mean_GMV_by_Subtype_Stage_%s.csv', Kfolders{k})));
+    writetable(T_Corr, fullfile(outdir_perK, sprintf('Mean_Correspondence_by_Subtype_Stage_%s.csv', Kfolders{k})));
+    fprintf('  Saved mean tables for %s\n', Kfolders{k});
 end
 
-fprintf('\nDONE. All visualizations saved to:\n  %s\n', out_dir);
+% Save overall tables across all K models
+writetable(T_GMV_all, fullfile(out_dir, 'Mean_GMV_by_Subtype_Stage_All_K.csv'));
+writetable(T_Corr_all, fullfile(out_dir, 'Mean_Correspondence_by_Subtype_Stage_All_K.csv'));
+fprintf('Saved overall mean tables across all K models.\n');
+
+fprintf('\nDONE. All visualizations and tables saved to:\n  %s\n', out_dir);

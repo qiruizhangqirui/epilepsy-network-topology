@@ -119,7 +119,7 @@ y1_cols  <- c("IQ","TMTA","TMTB","CVLT TL","CVLT LDFR","BNT","Letter Fluency",
               "Logical Memory 1","Logical Memory 2","ROCF Copy","Pegboard R","Pegboard L") # Cognition
 
 y2_cols  <- c("EpilepsyType_TLE_EXE","FTBTC_Yes_No","Lateralization_Left","Lateralization_Right","Lateralization_Unclear",
-              "Pathology_UHS","Pathology_BHS","Pathology_Lesion","Pathology_Normal") # Epilepsy Clinicals
+              "Pathology_UHS","Pathology_BHS","Pathology_Lesion","Pathology_Normal", "ASM_count", "AgeOnset") # Epilepsy Clinicals
 
 y3_cols  <- c("IQ","Vocabulary","Similarities")                                        # General Intelligence
 y4_cols  <- c("BNT","Letter Fluency","Semantic fluency")                               # Language
@@ -129,11 +129,13 @@ y7_cols  <- c("TMTA","TMTB","Coding","Pegboard R","Pegboard L")                 
 y8_cols  <- c("EpilepsyType_TLE_EXE","FTBTC_Yes_No")                                   # Epilepsy Type
 y9_cols  <- c("Lateralization_Left","Lateralization_Right","Lateralization_Unclear")   # Lateralization
 y10_cols <- c("Pathology_UHS","Pathology_BHS","Pathology_Lesion","Pathology_Normal")   # Pathology
+y11_cols <- "ASM_count"
+y12_cols <- c("SeizureDuration")                                          # Seizure Burden AgeOnset
 
 keep_unique <- function(v) v[!duplicated(v)]
 
 x_image_cols    <- keep_unique(c(x1_cols, x2_cols))
-y_clinical_cols <- keep_unique(c(y1_cols,y2_cols,y3_cols,y4_cols,y5_cols,y6_cols,y7_cols,y8_cols,y9_cols,y10_cols))
+y_clinical_cols <- keep_unique(c(y1_cols,y2_cols,y3_cols,y4_cols,y5_cols,y6_cols,y7_cols,y8_cols,y9_cols,y10_cols,y11_cols,y12_cols))
 
 # Validate columns
 stopifnot(all(x_image_cols %in% names(df)), all(y_clinical_cols %in% names(df)))
@@ -156,7 +158,9 @@ Y_sets <- list(
   Y8_MotorSkills       = y7_cols,
   Y9_EpilepsyType      = y8_cols,
   Y10_Lateralization   = y9_cols,
-  Y11_Pathology        = y10_cols
+  Y11_Pathology        = y10_cols,
+  Y12_ASM              = y11_cols,
+  Y13_SeizureBurden    = y12_cols
 )
 
 # =========================
@@ -802,3 +806,183 @@ R_full_df <- as.data.frame(R_full) %>% tibble::rownames_to_column("Set")
 P_full_df <- as.data.frame(P_full) %>% tibble::rownames_to_column("Set")
 write.csv(R_full_df, file = file.path(out_dir, "Matrix_firstComp_R_full.csv"), row.names = FALSE)
 write.csv(P_full_df, file = file.path(out_dir, "Matrix_firstComp_p_full.csv"), row.names = FALSE)
+
+# =========================================================================
+# Part 6: Bootstrap Loading Stability Analysis (X1 vs Y1 only)
+# =========================================================================
+message("\n==========================================================")
+message("Running sCCA Bootstrap Loading Stability Analysis (X1 vs Y1)...")
+message("==========================================================\n")
+
+# Get optimal penalty parameters from the original fit of X1 vs Y1
+x_name <- "X1_Network_Topology"
+y_name <- "Y1_Clinical"
+
+Xmat_raw <- to_numeric_matrix(df, X_sets[[x_name]])
+Ymat_raw <- to_numeric_matrix(df, Y_sets[[y_name]])
+
+# Preprocess identically to fit_true_and_penalties
+keepX <- which(apply(Xmat_raw, 2, var, na.rm = TRUE) > min_var_global)
+keepY <- which(apply(Ymat_raw, 2, var, na.rm = TRUE) > min_var_global)
+X_clean <- as.matrix(Xmat_raw[, keepX, drop = FALSE])
+Y_clean <- as.matrix(Ymat_raw[, keepY, drop = FALSE])
+
+cc <- complete.cases(cbind(X_clean, Y_clean))
+X_cc <- X_clean[cc, , drop = FALSE]
+Y_cc <- Y_clean[cc, , drop = FALSE]
+
+X_scaled <- scale_cols(X_cc)
+Y_scaled <- scale_cols(Y_cc)
+
+# Run CCA.permute on the true data to get the optimal penalties
+set.seed(seed_select_global)
+per_true <- PMA::CCA.permute(
+  x = X_scaled, z = Y_scaled, typex = "standard", typez = "standard",
+  nperms = nperms_select_global, trace = FALSE,
+  penaltyxs = penaltyxs_ratio,
+  penaltyzs = penaltyzs_ratio
+)
+
+opt_penaltyx <- per_true$bestpenaltyx
+opt_penaltyz <- per_true$bestpenaltyz
+message(sprintf("Optimal penalties selected: penaltyx = %.3f, penaltyz = %.3f", opt_penaltyx, opt_penaltyz))
+
+# Fit observed (non-bootstrap) sCCA on the true data for all components
+K_eff <- max(1, min(K_components_global, nrow(X_scaled)-1, ncol(X_scaled), ncol(Y_scaled)))
+fit_obs <- PMA::CCA(
+  x = X_scaled, z = Y_scaled, typex = "standard", typez = "standard",
+  K = K_eff, standardize = FALSE,
+  penaltyx = opt_penaltyx, penaltyz = opt_penaltyz,
+  v = per_true$v.init
+)
+
+# Extract observed loadings
+u_obs <- fit_obs$u # ncol(X_scaled) x K_eff
+v_obs <- fit_obs$v # ncol(Y_scaled) x K_eff
+
+# Bootstrap settings
+n_boot <- 1000
+n_subj <- nrow(X_scaled)
+
+# We will store the loadings for each bootstrap run across all components
+boot_u_array <- array(0, dim = c(n_boot, ncol(X_scaled), K_eff))
+boot_v_array <- array(0, dim = c(n_boot, ncol(Y_scaled), K_eff))
+
+set.seed(789) # seed for bootstrap resampling
+
+for (b in seq_len(n_boot)) {
+  if (b %% 100 == 0) {
+    message(sprintf("  Bootstrap iteration %d / %d ...", b, n_boot))
+  }
+  
+  boot_idx <- sample(n_subj, replace = TRUE)
+  X_b <- X_scaled[boot_idx, , drop = FALSE]
+  Y_b <- Y_scaled[boot_idx, , drop = FALSE]
+  
+  # Re-scale within the bootstrap sample
+  X_b_scaled <- scale_cols(X_b)
+  Y_b_scaled <- scale_cols(Y_b)
+  
+  fit_b <- tryCatch({
+    PMA::CCA(
+      x = X_b_scaled, z = Y_b_scaled, typex = "standard", typez = "standard",
+      K = K_eff, standardize = FALSE,
+      penaltyx = opt_penaltyx, penaltyz = opt_penaltyz
+    )
+  }, error = function(e) NULL)
+  
+  if (!is.null(fit_b)) {
+    K_b <- fit_b$K
+    for (k in seq_len(min(K_eff, K_b))) {
+      boot_u_array[b, , k] <- fit_b$u[, k]
+      boot_v_array[b, , k] <- fit_b$v[, k]
+    }
+  }
+}
+
+# Combine statistics for all K_eff components
+boot_stats_list <- list()
+
+for (k in seq_len(K_eff)) {
+  u_obs_k <- u_obs[, k]
+  v_obs_k <- v_obs[, k]
+  
+  boot_u_k <- boot_u_array[, , k]
+  boot_v_k <- boot_v_array[, , k]
+  
+  abs_boot_u_k <- abs(boot_u_k)
+  abs_boot_v_k <- abs(boot_v_k)
+  
+  # Calculate statistics for X features (Imaging)
+  stats_u <- tibble(
+    Feature = colnames(X_scaled),
+    Observed_Loading = u_obs_k,
+    Selection_Frequency = colMeans(boot_u_k != 0),
+    Mean_Abs_Loading = colMeans(abs_boot_u_k),
+    Bootstrap_SD = apply(abs_boot_u_k, 2, sd),
+    CI_Lower_Abs = apply(abs_boot_u_k, 2, quantile, probs = 0.025, na.rm = TRUE),
+    CI_Upper_Abs = apply(abs_boot_u_k, 2, quantile, probs = 0.975, na.rm = TRUE)
+  ) %>%
+    mutate(
+      Signed_Mean_Loading = sign(Observed_Loading) * Mean_Abs_Loading,
+      CI_Lower_Signed = pmin(sign(Observed_Loading) * CI_Lower_Abs, sign(Observed_Loading) * CI_Upper_Abs),
+      CI_Upper_Signed = pmax(sign(Observed_Loading) * CI_Lower_Abs, sign(Observed_Loading) * CI_Upper_Abs),
+      Side = "X",
+      Component = k
+    )
+  
+  # Calculate statistics for Y features (Clinical)
+  stats_v <- tibble(
+    Feature = colnames(Y_scaled),
+    Observed_Loading = v_obs_k,
+    Selection_Frequency = colMeans(boot_v_k != 0),
+    Mean_Abs_Loading = colMeans(abs_boot_v_k),
+    Bootstrap_SD = apply(abs_boot_v_k, 2, sd),
+    CI_Lower_Abs = apply(abs_boot_v_k, 2, quantile, probs = 0.025, na.rm = TRUE),
+    CI_Upper_Abs = apply(abs_boot_v_k, 2, quantile, probs = 0.975, na.rm = TRUE)
+  ) %>%
+    mutate(
+      Signed_Mean_Loading = sign(Observed_Loading) * Mean_Abs_Loading,
+      CI_Lower_Signed = pmin(sign(Observed_Loading) * CI_Lower_Abs, sign(Observed_Loading) * CI_Upper_Abs),
+      CI_Upper_Signed = pmax(sign(Observed_Loading) * CI_Lower_Abs, sign(Observed_Loading) * CI_Upper_Abs),
+      Side = "Y",
+      Component = k
+    )
+  
+  boot_stats_k <- bind_rows(stats_u, stats_v)
+  boot_stats_list[[k]] <- boot_stats_k
+  
+  # ===== Plot stability for component k =====
+  # Show only top 30 features (by absolute weight) selected in the observed true sCCA fit
+  plot_data <- boot_stats_k %>% 
+    filter(Observed_Loading != 0) %>%
+    arrange(desc(abs(Observed_Loading))) %>%
+    slice_head(n = 30) %>%
+    arrange(Side, desc(abs(Observed_Loading)))
+  
+  if (nrow(plot_data) > 0) {
+    p_k <- ggplot(plot_data, aes(x = reorder(Feature, abs(Observed_Loading)), y = Observed_Loading, fill = Side)) +
+      geom_col(show.legend = FALSE, alpha = 0.8) +
+      geom_errorbar(aes(ymin = Observed_Loading - Bootstrap_SD,
+                        ymax = Observed_Loading + Bootstrap_SD),
+                    width = 0.2, color = "black", alpha = 0.7) +
+      coord_flip() +
+      facet_wrap(~Side, scales = "free_y") +
+      scale_fill_manual(values = c("X" = "#FF6666", "Y" = "#6699FF")) +
+      labs(title = sprintf("SCCA Loading Stability with Bootstrap SD (X1 vs Y1 Comp %d)", k),
+           x = "Feature", y = "Observed Loading (Error Bars = Bootstrap SD)") +
+      theme_minimal(base_size = 14)
+    
+    plot_file <- file.path(out_dir, sprintf("bootstrap_loadings_stability_comp%d_X1_vs_Y1.png", k))
+    ggsave(filename = plot_file, plot = p_k, width = 10, height = 7, dpi = 150)
+    message(sprintf("Saved bootstrap plot for Component %d to: %s", k, plot_file))
+  } else {
+    message(sprintf("No features were selected (Observed_Loading != 0) for Component %d. Skipping plot.", k))
+  }
+}
+
+boot_stats_all <- bind_rows(boot_stats_list)
+stats_file <- file.path(out_dir, "bootstrap_loading_stability_X1_vs_Y1.csv")
+write.csv(boot_stats_all, file = stats_file, row.names = FALSE)
+message(sprintf("Saved bootstrap statistics CSV to: %s", stats_file))
+

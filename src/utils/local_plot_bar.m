@@ -82,6 +82,25 @@ function local_plot_bar(vals_L, pvals_L, vals_R, pvals_R, suffix_name, out_dir)
     scan_name = fullfile(out_dir, [suffix_name '.png']);
     exportgraphics(f, scan_name, 'Resolution', 300, 'BackgroundColor', 'none');
     close(f);
+
+    % Save network statistics to CSV
+    try
+        colNames = {'Network', 'Left_Statistic', 'Left_PValue', 'Right_Statistic', 'Right_PValue'};
+        dataCell = cell(17, 5);
+        for idx = 1:17
+            dataCell{idx, 1} = labels_s11{idx};
+            dataCell{idx, 2} = vals_L_ord(idx);
+            dataCell{idx, 3} = pvals_L_ord(idx);
+            dataCell{idx, 4} = vals_R_ord(idx);
+            dataCell{idx, 5} = pvals_R_ord(idx);
+        end
+        
+        csv_path = fullfile(out_dir, [suffix_name '.csv']);
+        writecell([colNames; dataCell], csv_path);
+        fprintf('  Saved bar plot statistics table to: %s\n', csv_path);
+    catch ME
+        warning('Failed to export bar plot statistics table: %s', ME.message);
+    end
 end
 
 function colors = get_bar_colors(vals, pvals)
