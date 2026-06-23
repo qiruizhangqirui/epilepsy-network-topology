@@ -388,7 +388,7 @@ if isfield(Means.(RefSite).Correspondence, RefGroup)
 
     xlabel('Correlation with Focal Epilepsy (Spatial Pattern)');
     ylabel('Mean Absolute Difference from Focal Epilepsy (Magnitude)');
-    title('Similarity & Abnormality relative to Focal Epilepsy (JLH)');
+    % title('Similarity & Abnormality relative to Focal Epilepsy (JLH)');
     legend({'Correspondence','k-hubness'}, 'Location','best');
     set(gca,'FontSize',11);
 
