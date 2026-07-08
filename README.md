@@ -77,7 +77,7 @@ The analysis is organized into sequential steps (`S1` to `S12`), categorized by 
 
 The computation data and pre-calculated results can be downloaded from:
 
-> **Zhang, Q., Arielle, D., Sharifzadeh Javidi, S., Ankeeta, A., Sperling, M., Zhang, Z., & Tracy, J. (2026). Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates [Data set]. Zenodo. <https://doi.org/10.5281/zenodo.18808544>**
+> **Zhang, Q., Arielle, D., Sharifzadeh Javidi, S., Ankeeta, A., Sperling, M., Zhang, Z., & Tracy, J. (2026). Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates [Data set]. Zenodo. <https://doi.org/10.5281/zenodo.18808543>**
 
 Please download the dataset and extract it into the root directory of this repository. Note that the Zenodo repository also contains all pre-computed results.
 
