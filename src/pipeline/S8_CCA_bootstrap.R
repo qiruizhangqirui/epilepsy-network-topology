@@ -865,8 +865,22 @@ n_boot <- 1000
 n_subj <- nrow(X_scaled)
 
 # We will store the loadings for each bootstrap run across all components
-boot_u_array <- array(0, dim = c(n_boot, ncol(X_scaled), K_eff))
-boot_v_array <- array(0, dim = c(n_boot, ncol(Y_scaled), K_eff))
+boot_u_array <- array(NA_real_, dim = c(n_boot, ncol(X_scaled), K_eff))
+boot_v_array <- array(NA_real_, dim = c(n_boot, ncol(Y_scaled), K_eff))
+
+# Match complete components jointly across X and Y, retaining raw estimates.
+all_permutations <- function(x) {
+  if (length(x) == 1L) return(matrix(x, nrow = 1L))
+  do.call(rbind, lapply(x, function(i) cbind(i, all_permutations(x[x != i]))))
+}
+component_orders <- all_permutations(seq_len(K_eff))
+reference <- rbind(u_obs, v_obs)
+reference <- sweep(reference, 2, sqrt(colSums(reference^2)), "/")
+boot_u_raw <- boot_u_array
+boot_v_raw <- boot_v_array
+boot_indices <- matrix(NA_integer_, n_boot, n_subj)
+boot_match <- boot_sign <- boot_similarity <- matrix(NA_real_, n_boot, K_eff)
+boot_error <- rep("", n_boot)
 
 set.seed(789) # seed for bootstrap resampling
 
@@ -876,6 +890,7 @@ for (b in seq_len(n_boot)) {
   }
   
   boot_idx <- sample(n_subj, replace = TRUE)
+  boot_indices[b, ] <- boot_idx
   X_b <- X_scaled[boot_idx, , drop = FALSE]
   Y_b <- Y_scaled[boot_idx, , drop = FALSE]
   
@@ -887,19 +902,37 @@ for (b in seq_len(n_boot)) {
     PMA::CCA(
       x = X_b_scaled, z = Y_b_scaled, typex = "standard", typez = "standard",
       K = K_eff, standardize = FALSE,
-      penaltyx = opt_penaltyx, penaltyz = opt_penaltyz
+      penaltyx = opt_penaltyx, penaltyz = opt_penaltyz, trace = FALSE
     )
-  }, error = function(e) NULL)
-  
+  }, error = function(e) { boot_error[b] <<- conditionMessage(e); NULL })
+
   if (!is.null(fit_b)) {
-    K_b <- fit_b$K
-    for (k in seq_len(min(K_eff, K_b))) {
-      boot_u_array[b, , k] <- fit_b$u[, k]
-      boot_v_array[b, , k] <- fit_b$v[, k]
+    if (fit_b$K != K_eff || any(!is.finite(c(fit_b$u, fit_b$v)))) {
+      boot_error[b] <- "Incomplete or nonfinite component weights"
+      next
     }
+    boot_u_raw[b, , ] <- fit_b$u
+    boot_v_raw[b, , ] <- fit_b$v
+    candidate <- rbind(fit_b$u, fit_b$v)
+    similarity <- crossprod(reference, sweep(candidate, 2, sqrt(colSums(candidate^2)), "/"))
+    scores <- apply(component_orders, 1, function(p) sum(abs(similarity[cbind(seq_len(K_eff), p)])))
+    matched <- component_orders[which.max(scores), ]
+    direction <- ifelse(similarity[cbind(seq_len(K_eff), matched)] < 0, -1, 1)
+    boot_match[b, ] <- matched
+    boot_sign[b, ] <- direction
+    boot_similarity[b, ] <- abs(similarity[cbind(seq_len(K_eff), matched)])
+    boot_u_array[b, , ] <- sweep(fit_b$u[, matched, drop = FALSE], 2, direction, "*")
+    boot_v_array[b, , ] <- sweep(fit_b$v[, matched, drop = FALSE], 2, direction, "*")
   }
 }
 
+saveRDS(list(u = boot_u_array, v = boot_v_array, raw_u = boot_u_raw, raw_v = boot_v_raw,
+             observed_u = u_obs, observed_v = v_obs, features_X = colnames(X_scaled),
+             features_Y = colnames(Y_scaled), participant_ids = df[[id_col]][cc],
+             indices = boot_indices, matched_component = boot_match, sign = boot_sign,
+             similarity = boot_similarity, error = boot_error, n = n_subj, B = n_boot,
+             seed = 789L, penalties = c(opt_penaltyx, opt_penaltyz), session = sessionInfo()),
+        file.path(out_dir, "bootstrap_weights_X1_vs_Y1.rds"))
 # Combine statistics for all K_eff components
 boot_stats_list <- list()
 
@@ -917,9 +950,9 @@ for (k in seq_len(K_eff)) {
   stats_u <- tibble(
     Feature = colnames(X_scaled),
     Observed_Loading = u_obs_k,
-    Selection_Frequency = colMeans(boot_u_k != 0),
-    Mean_Abs_Loading = colMeans(abs_boot_u_k),
-    Bootstrap_SD = apply(abs_boot_u_k, 2, sd),
+    Selection_Frequency = colMeans(boot_u_k != 0, na.rm = TRUE),
+    Mean_Abs_Loading = colMeans(abs_boot_u_k, na.rm = TRUE),
+    Bootstrap_SD = apply(abs_boot_u_k, 2, sd, na.rm = TRUE),
     CI_Lower_Abs = apply(abs_boot_u_k, 2, quantile, probs = 0.025, na.rm = TRUE),
     CI_Upper_Abs = apply(abs_boot_u_k, 2, quantile, probs = 0.975, na.rm = TRUE)
   ) %>%
@@ -935,9 +968,9 @@ for (k in seq_len(K_eff)) {
   stats_v <- tibble(
     Feature = colnames(Y_scaled),
     Observed_Loading = v_obs_k,
-    Selection_Frequency = colMeans(boot_v_k != 0),
-    Mean_Abs_Loading = colMeans(abs_boot_v_k),
-    Bootstrap_SD = apply(abs_boot_v_k, 2, sd),
+    Selection_Frequency = colMeans(boot_v_k != 0, na.rm = TRUE),
+    Mean_Abs_Loading = colMeans(abs_boot_v_k, na.rm = TRUE),
+    Bootstrap_SD = apply(abs_boot_v_k, 2, sd, na.rm = TRUE),
     CI_Lower_Abs = apply(abs_boot_v_k, 2, quantile, probs = 0.025, na.rm = TRUE),
     CI_Upper_Abs = apply(abs_boot_v_k, 2, quantile, probs = 0.975, na.rm = TRUE)
   ) %>%
@@ -961,20 +994,33 @@ for (k in seq_len(K_eff)) {
     arrange(Side, desc(abs(Observed_Loading)))
   
   if (nrow(plot_data) > 0) {
-    p_k <- ggplot(plot_data, aes(x = reorder(Feature, abs(Observed_Loading)), y = Observed_Loading, fill = Side)) +
-      geom_col(show.legend = FALSE, alpha = 0.8) +
-      geom_errorbar(aes(ymin = Observed_Loading - Bootstrap_SD,
-                        ymax = Observed_Loading + Bootstrap_SD),
-                    width = 0.2, color = "black", alpha = 0.7) +
-      coord_flip() +
-      facet_wrap(~Side, scales = "free_y") +
-      scale_fill_manual(values = c("X" = "#FF6666", "Y" = "#6699FF")) +
-      labs(title = sprintf("SCCA Loading Stability with Bootstrap SD (X1 vs Y1 Comp %d)", k),
-           x = "Feature", y = "Observed Loading (Error Bars = Bootstrap SD)") +
-      theme_minimal(base_size = 14)
-    
+    # Whiskers end at the most extreme weights within 1.5 IQR of the box.
+    bootstrap_long <- bind_rows(
+      as_tibble(boot_u_k, .name_repair = ~colnames(X_scaled)) %>% mutate(Side = "X"),
+      as_tibble(boot_v_k, .name_repair = ~colnames(Y_scaled)) %>% mutate(Side = "Y")
+    ) %>% group_by(Side) %>% mutate(Resample = row_number()) %>% ungroup() %>%
+      pivot_longer(-c(Side, Resample), names_to = "Feature", values_to = "Weight") %>%
+      filter(is.finite(Weight)) %>%
+      inner_join(plot_data %>% select(Feature, Side, Observed_Loading), by = c("Feature", "Side"))
+    write.csv(bootstrap_long, file.path(out_dir, sprintf("bootstrap_weights_comp%d_X1_vs_Y1.csv", k)), row.names = FALSE)
+    box_data <- bootstrap_long %>% group_by(Feature, Side, Observed_Loading) %>%
+      summarise(Q1 = quantile(Weight, 0.25), Median = median(Weight),
+                Q3 = quantile(Weight, 0.75),
+                Lower_whisker = min(Weight[Weight >= Q1 - 1.5 * (Q3 - Q1)]),
+                Upper_whisker = max(Weight[Weight <= Q3 + 1.5 * (Q3 - Q1)]),
+                B_valid = n(), .groups = "drop")
+    p_k <- ggplot(box_data, aes(x = reorder(Feature, abs(Observed_Loading)), fill = Side)) +
+      geom_hline(yintercept = 0, color = "grey70", linewidth = 0.3) +
+      geom_boxplot(aes(ymin = Lower_whisker, lower = Q1, middle = Median, upper = Q3, ymax = Upper_whisker),
+                   stat = "identity", width = 0.6, staplewidth = 0.4, linewidth = 0.35, show.legend = FALSE) +
+      geom_point(aes(y = Observed_Loading), shape = 18, color = "black", size = 2) +
+      coord_flip() + facet_wrap(~Side, scales = "free_y") +
+      scale_fill_manual(values = c("X" = "#FF6666", "Y" = "#6699FF"), guide = "none") +
+      labs(x = NULL, y = "Canonical weight") +
+      theme_minimal(base_size = 12) + theme(legend.position = "none", axis.text.y = element_text(size = 10, face = "bold"))
+
     plot_file <- file.path(out_dir, sprintf("bootstrap_loadings_stability_comp%d_X1_vs_Y1.png", k))
-    ggsave(filename = plot_file, plot = p_k, width = 10, height = 7, dpi = 150)
+    ggsave(filename = plot_file, plot = p_k, width = 10, height = 7.5, dpi = 300)
     message(sprintf("Saved bootstrap plot for Component %d to: %s", k, plot_file))
   } else {
     message(sprintf("No features were selected (Observed_Loading != 0) for Component %d. Skipping plot.", k))
