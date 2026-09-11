@@ -1,4 +1,4 @@
-# Individualized Dual-Axis Network Topology in Focal Epilepsy
+# Complementary Axes of Functional System Integrity and Integration with Divergent Clinical Correlates Characterize Focal Epilepsy
 
 This repository contains the complete analysis pipeline for the study: **Complementary Axes of Functional System Integrity and Integration with Divergent Clinical Correlates Characterize Focal Epilepsy**. The project leverages individualized resting-state functional MRI (rs-fMRI) networks to explore complementary, dual-axis network topology alterations across the spectrum of focal epilepsy and other common epilepsy syndromes, using Normative Modeling and Subtype and Stage Inference (SuStaIn).
 
