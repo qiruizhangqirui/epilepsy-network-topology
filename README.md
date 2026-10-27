@@ -1,6 +1,6 @@
-# Complementary Axes of Functional System Integrity and Integration with Divergent Clinical Correlates Characterize Focal Epilepsy
+# Complementary axes of functional system integrity and integration with divergent clinical correlates characterize focal epilepsy
 
-This repository contains the complete analysis pipeline for the study: **Complementary Axes of Functional System Integrity and Integration with Divergent Clinical Correlates Characterize Focal Epilepsy**. The project leverages individualized resting-state functional MRI (rs-fMRI) networks to explore complementary, dual-axis network topology alterations across the spectrum of focal epilepsy and other common epilepsy syndromes, using Normative Modeling and Subtype and Stage Inference (SuStaIn).
+This repository contains the complete analysis pipeline for the study: **Complementary axes of functional system integrity and integration with divergent clinical correlates characterize focal epilepsy**. The project leverages individualized resting-state functional MRI (rs-fMRI) networks to explore complementary, dual-axis network topology alterations across the spectrum of focal epilepsy and other common epilepsy syndromes, using Normative Modeling and Subtype and Stage Inference (SuStaIn).
 
 ## Background
 
@@ -92,4 +92,4 @@ Please download the dataset and extract it into the root directory of this repos
 ## Citation
 
 If you use this code or pipeline, please cite:
-> **Zhang Q, Dascal A, Javidi SS, Ankeeta A, Sperling MR, Zhang Z, Tracy JI. Mapping Individualized Dual-Axis Network Topology in Focal Epilepsy: Divergent Alterations in System Integrity, Integration, and Clinical Correlates. bioRxiv. 2026:2026.03.17.712432. doi: 10.64898/2026.03.17.712432**
+> **Zhang Q, Dascal A, Javidi SS, Ankeeta A, Sperling MR, Zhang Z, Tracy JI. Complementary axes of functional system integrity and integration with divergent clinical correlates characterize focal epilepsy. Nat Commun (2026). https://doi.org/10.1038/s41467-026-79018-2**
